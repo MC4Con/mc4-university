@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MC4 University</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#f3f1ec; --card:#ffffff; --ink:#1c232b; --muted:#66707b; --line:#e2ddd3; --soft:#f8f6f2;
+  --accent:#e07a12; --accent-ink:#ffffff; --danger:#c0392b; --ok:#2e9d5b;
+  --exposure:#7d8b99; --training:#2f78c8; --guidance:#cf8f12; --review:#2e9d5b;
+  --exposure-bg:#eef1f4; --training-bg:#e8f1fb; --guidance-bg:#fbf3e2; --review-bg:#e7f5ec;
+  --radius:12px; --shadow:0 1px 2px rgba(20,25,30,.06),0 4px 14px rgba(20,25,30,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Barlow,system-ui,sans-serif;font-size:15px}
+h1,h2,h3,.cond{font-family:"Barlow Condensed",Barlow,sans-serif;letter-spacing:.2px;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+.hidden{display:none!important}
+
+/* top bar */
+.topbar{background:var(--ink);color:#fff;display:flex;align-items:center;gap:16px;padding:10px 20px;position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px}
+.crest{width:42px;height:42px;object-fit:contain;display:block;flex:none}
+.crest-lg{width:190px;max-width:70%;height:auto;display:block;margin:0 auto 6px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.18))}
+.logo{width:34px;height:34px;border-radius:8px;background:var(--accent);display:grid;place-items:center;font-family:"Barlow Condensed",Barlow,sans-serif;font-weight:700;font-size:15px;color:#fff}
+.brand b{font-family:"Barlow Condensed",Barlow,sans-serif;font-size:20px;font-weight:700;display:block;line-height:1}
+.brand small{color:#aab3bd;font-size:12px}
+.nav{display:flex;gap:4px;margin-left:12px}
+.nav button{background:none;border:0;color:#c9d0d7;padding:8px 12px;border-radius:8px;font-weight:600}
+.nav button.on,.nav button:hover{background:rgba(255,255,255,.1);color:#fff}
+.spacer{flex:1}
+.who{color:#aab3bd;font-size:13px}
+.btn{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:9px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:#cfc8bb}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost-dark{background:transparent;border-color:rgba(255,255,255,.25);color:#fff}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.banner{background:#fff4e8;border-bottom:1px solid #f3d6b8;color:#7a4510;padding:8px 20px;font-size:13px}
+
+.page{max-width:1280px;margin:0 auto;padding:22px 20px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pad{padding:18px}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.tile{padding:14px 16px}
+.tile .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.tile .val{font-family:"Barlow Condensed",Barlow,sans-serif;font-size:32px;font-weight:700;margin-top:2px}
+.phase-counts{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+.pc{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted)}
+.pc b{color:var(--ink);font-size:15px}
+.dot{width:9px;height:9px;border-radius:50%}
+
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.search{flex:1;min-width:180px;max-width:340px;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:9px 12px}
+.seg{display:inline-flex;background:#e8e4dc;border-radius:9px;padding:3px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:7px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* trainee rows */
+.rows{display:flex;flex-direction:column;gap:8px}
+.trow{display:grid;grid-template-columns:minmax(180px,1.4fr) 150px minmax(240px,2fr) 90px 80px;gap:16px;align-items:center;padding:12px 16px;cursor:pointer;transition:border-color .15s}
+.trow:hover{border-color:#cdbfae}
+.trow .nm{font-weight:700;font-size:16px}
+.trow .sub{color:var(--muted);font-size:13px}
+.wkbadge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.minibars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mb .t{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.bar{height:7px;background:#ece8e0;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.score{font-family:"Barlow Condensed",Barlow,sans-serif;font-weight:700;font-size:28px;text-align:right;line-height:1}
+.score small{display:block;font-family:Barlow,sans-serif;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.att{text-align:right;font-weight:700}
+.att small{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+
+/* trainee detail */
+.back{background:none;border:0;color:var(--muted);font-weight:600;padding:0;margin-bottom:12px}
+.back:hover{color:var(--ink)}
+.thead{display:grid;grid-template-columns:1.2fr 2fr;gap:24px;padding:20px;margin-bottom:16px}
+.thead h1{font-size:34px;font-weight:700}
+.meta{color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.meta b{color:var(--ink)}
+.hbtns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.scorebox{display:grid;grid-template-columns:110px 1fr;gap:18px;align-items:center}
+.bigscore{text-align:center;border-right:1px solid var(--line);padding-right:14px}
+.bigscore .n{font-family:"Barlow Condensed",Barlow,sans-serif;font-size:56px;font-weight:700;line-height:1}
+.bigscore .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.phasebars{display:flex;flex-direction:column;gap:8px}
+.pb{display:grid;grid-template-columns:78px 1fr 64px;gap:10px;align-items:center;font-size:13px;font-weight:600}
+.pb .bar{height:10px}
+.pb .r{text-align:right;color:var(--muted)}
+.sidestats{display:flex;gap:16px;margin-top:10px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.sidestats b{color:var(--ink)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 14px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+
+/* skills grid */
+.grid-wrap{overflow:auto;max-height:calc(100vh - 160px)}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:900px}
+.grid th,.grid td{border-bottom:1px solid var(--line);padding:0;text-align:center}
+.grid thead th{position:sticky;background:var(--card);z-index:2;font-size:12px}
+.grid thead tr:first-child th{top:0;height:32px}
+.grid thead tr:nth-child(2) th{top:32px;height:28px;color:var(--muted);font-weight:600}
+.grid th.sk,.grid td.sk{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;padding:0 12px;min-width:220px;font-weight:600;font-size:13px;border-right:1px solid var(--line)}
+.grid thead th.sk{z-index:3}
+.grid th.ph{font-family:"Barlow Condensed",Barlow,sans-serif;font-size:15px;letter-spacing:.6px;text-transform:uppercase;color:#fff}
+.grid td{height:34px}
+.grid td.c{min-width:46px}
+.grid .gs{border-left:2px solid var(--card)}
+.grid tbody tr:hover td{background:#fbfaf7}
+.grid tbody tr:hover td.sk{background:#fbfaf7}
+.x{width:30px;height:24px;border-radius:6px;border:1.5px dashed transparent;background:transparent;font-weight:800;font-size:15px;color:transparent;line-height:1}
+.editable .x:hover{border-color:#c9c1b3;color:#c9c1b3}
+.x.on{color:#fff;border-style:solid}
+.x:disabled{cursor:default}
+.curcol{background:#fff8ef!important}
+.grid thead th.curwk{color:var(--accent)!important;font-weight:800}
+.pills{display:flex;gap:3px;justify-content:center;padding:0 10px}
+.pill{width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:800;display:grid;place-items:center;background:#ece8e0;color:#a39b8d}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.legend div{font-size:12.5px;color:var(--muted);padding:10px 12px;border-radius:10px;line-height:1.4}
+.legend b{display:block;color:var(--ink);font-family:"Barlow Condensed",Barlow,sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:.5px}
+
+/* weekly forms */
+.weeks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.wkcard{padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.wkcard h4{margin:0 0 8px;font-family:"Barlow Condensed",Barlow,sans-serif;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.wkcard.cur{border-color:var(--accent);box-shadow:0 0 0 2px #fbe2cf}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.inp{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;width:100%}
+textarea.inp{resize:vertical;min-height:60px}
+.inp:focus,.search:focus{outline:2px solid #f6c9a6;border-color:var(--accent)}
+.stabrow{display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)}
+.stabrow .w{font-family:"Barlow Condensed",Barlow,sans-serif;font-weight:700;font-size:16px;padding-top:6px}
+.stabrow .w small{display:block;font-family:Barlow,sans-serif;font-size:11px;color:var(--muted);font-weight:600}
+.raters{display:flex;flex-direction:column}
+.rater{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);gap:10px}
+.rater .n{font-weight:600}
+.rate button{border:1px solid var(--line);background:#fff;padding:6px 12px;font-weight:700;font-size:13px;color:var(--muted)}
+.rate button:first-child{border-radius:8px 0 0 8px}
+.rate button:last-child{border-radius:0 8px 8px 0}
+.rate button+button{border-left:0}
+.rate button.on.GOOD{background:var(--ok);color:#fff;border-color:var(--ok)}
+.rate button.on.OK{background:var(--guidance);color:#fff;border-color:var(--guidance)}
+.rate button.on.POOR{background:var(--danger);color:#fff;border-color:var(--danger)}
+.note{font-size:13px;color:var(--muted);margin:0 0 12px}
+
+/* settings */
+.settings{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
+.settings h2{font-size:22px;margin-bottom:4px}
+.skill-ed{display:flex;flex-direction:column;gap:4px;max-height:520px;overflow:auto;margin:10px 0}
+.skill-ed .r{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center}
+.skill-ed .r.off .inp{color:#a39b8d;text-decoration:line-through}
+.skill-ed .num{color:var(--muted);font-size:12px;text-align:right}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:7px;width:30px;height:30px;font-size:13px;color:var(--muted)}
+.iconbtn:hover{color:var(--ink)}
+.addrow{display:flex;gap:8px}
+.weights{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.code{background:#1c232b;color:#d6dde4;border-radius:10px;padding:12px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:200px;overflow:auto;white-space:pre}
+ol.steps{padding-left:20px;margin:8px 0;line-height:1.55;font-size:14px}
+
+/* modal + toast */
+.overlay{position:fixed;inset:0;background:rgba(20,25,30,.45);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{width:100%;max-width:440px;padding:22px}
+.modal h2{font-size:24px;margin-bottom:14px}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap}
+.mfoot .left{margin-right:auto}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:90vw}
+#toast.show{opacity:1}
+#toast.err{background:var(--danger)}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 10%,#2a333d,#141a20)}
+.login .card{width:100%;max-width:380px;padding:26px}
+.login .logo{width:52px;height:52px;font-size:22px;border-radius:12px;margin:0 auto 10px}
+.login h1{text-align:center;font-size:30px}
+.login .tag{text-align:center;color:var(--muted);margin:2px 0 18px;font-size:14px}
+.login .seg{display:flex;margin-bottom:16px}
+.login .seg button{flex:1}
+.pindots{display:flex;justify-content:center;gap:12px;margin:6px 0 16px}
+.pindots i{width:16px;height:16px;border-radius:50%;border:2px solid #c9c1b3}
+.pindots i.f{background:var(--accent);border-color:var(--accent)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keypad button{height:58px;border-radius:12px;border:1px solid var(--line);background:var(--soft);font-family:"Barlow Condensed",Barlow,sans-serif;font-size:26px;font-weight:600}
+.keypad button:active{background:#ece6db}
+.keypad .go{background:var(--accent);border-color:var(--accent);color:#fff;font-size:18px}
+.hint{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px}
+.err-msg{color:var(--danger);font-size:13px;text-align:center;min-height:18px;margin-top:6px;font-weight:600}
+
+/* crew view */
+.crew{max-width:640px;margin:0 auto;padding:16px 16px 50px}
+.crewhead{padding:20px;margin-bottom:14px}
+.crewhead h1{font-size:30px}
+.crewscore{display:flex;gap:18px;align-items:center;margin-top:14px}
+.crewscore .bigscore{border-right:1px solid var(--line);padding-right:18px}
+.crewlist{padding:6px 16px}
+.crewlist .it{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;font-weight:600}
+.crewlist .it:last-child{border-bottom:0}
+.crewlist .pills{padding:0}
+
+@media (max-width:980px){
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .trow{grid-template-columns:1fr auto;gap:10px}
+  .trow .minibars{grid-column:1/-1;order:3}
+  .trow .wkcol{order:2}
+  .trow .att{display:none}
+  .thead{grid-template-columns:1fr}
+  .settings{grid-template-columns:1fr}
+  .legend{grid-template-columns:1fr 1fr}
+}
+@media (max-width:620px){
+  .topbar{padding:10px 14px;flex-wrap:wrap}
+  .nav{margin-left:0;order:3;width:100%}
+  .who{display:none}
+  .page{padding:16px 16px 50px}
+  .tiles{gap:10px}
+  .tile .val{font-size:26px}
+  .thead h1{font-size:28px}
+  .scorebox{grid-template-columns:90px 1fr}
+  .bigscore .n{font-size:44px}
+  .legend{grid-template-columns:1fr}
+  .mrow{grid-template-columns:1fr}
+  .grid th.sk,.grid td.sk{min-width:130px;max-width:150px;font-size:12px;padding:4px 8px;white-space:normal}
+}
+@media print{
+  .topbar,.banner,.hbtns,.back,.tabs,.toolbar,#toast,.nav{display:none!important}
+  body{background:#fff}
+  .card{box-shadow:none}
+  .grid-wrap{max-height:none;overflow:visible}
+  table.grid{min-width:0;font-size:10px}
+  .grid td{height:20px}
+  .x{width:18px;height:16px;font-size:11px}
+  .page{padding:0}
+}
+
+/* trainings */
+.trlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.trcard{padding:16px;display:flex;flex-direction:column;gap:8px}
+.trcard h3{font-size:21px}
+.trcard .sub{color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:#ece8e0;color:#5c5548}
+.chip.gen{background:#e8f1fb;color:var(--training)}
+.status{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.status.pass{background:#e7f5ec;color:var(--ok)}
+.status.fail{background:#fdecea;color:var(--danger)}
+.status.none{background:#eee;color:var(--muted)}
+.bookbtn{border:0;background:none;padding:0 0 0 6px;font-size:14px;vertical-align:middle;cursor:pointer}
+.viewer{background:#525659;border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:10px;align-items:center;min-height:200px}
+.viewer canvas{max-width:100%;height:auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);border-radius:4px}
+.viewer .msg{color:#e6e6e6;padding:40px 10px;text-align:center}
+.viewer .msg a{color:#fff}
+.viewer iframe{width:100%;height:75vh;border:0;background:#fff;border-radius:4px}
+.qcard{padding:16px;margin-bottom:10px}
+.qcard .qt{font-weight:700;margin-bottom:10px}
+.opt{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;cursor:pointer;background:#fff}
+.opt input{width:18px;height:18px;accent-color:var(--accent)}
+.opt.wrong{border-color:var(--danger);background:#fdecea}
+.opt.right{border-color:var(--ok);background:#e7f5ec}
+.result{padding:20px;text-align:center;margin-bottom:12px}
+.result .n{font-family:"Barlow Condensed",Barlow,sans-serif;font-size:52px;font-weight:700;line-height:1}
+.qed{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--soft)}
+.qed .orow{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:center;margin-top:6px}
+.qed .orow input[type=radio]{width:18px;height:18px;accent-color:var(--ok)}
+.skillpick{max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fff;columns:2;column-gap:16px}
+.skillpick label{display:flex;gap:6px;align-items:center;font-size:12.5px;padding:3px 0;break-inside:avoid;font-weight:600}
+.field label.btn{text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);cursor:pointer}
+.drop{border:2px dashed #cfc8bb;border-radius:10px;padding:16px;text-align:center;color:var(--muted);background:#fff}
+@media (max-width:620px){ .skillpick{columns:1} .trlist{grid-template-columns:1fr} }
+@media print{ .viewer{display:none} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   SETUP — paste your Supabase values between the quotes.
+   Leave both blank to run in DEMO MODE (sample data, saved in this browser only).
+   Supabase dashboard → Project Settings → API → "Project URL" and "anon public" key.
+   ===================================================================== */
+const SUPABASE_URL = 'https://cjltpcbyypivvcomsqdv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbHRwY2J5eXBpdnZjb21zcWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM5MjAxMDEsImV4cCI6MjEwOTQ5NjEwMX0.ZWG16ToAC9CYdR3OQ2b9E5AFHPp39p21YNldUWXjrJw';
+/* ===================================================================== */
+
+const LOGO = 'data:image/png;base64,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';
+const PROGRAM_NAME = 'Key Skills Program · Yard';
+const WEEKS = 13;
+const PHASES = [
+  {key:'exposure', label:'Exposure', short:'E', weeks:[1,2,3],
+   note:'Counts for little of the grade. Shows what they have been exposed to in the yard and what they have not yet seen.'},
+  {key:'training', label:'Training', short:'T', weeks:[4,5,6,7],
+   note:'Hands-on with management or a veteran employee working closely to train them on specific skills.'},
+  {key:'guidance', label:'Guidance', short:'G', weeks:[8,9,10],
+   note:'Mark an X when they complete the skill on their own. The less guidance needed, the higher the grade.'},
+  {key:'review', label:'Review', short:'R', weeks:[11,12,13],
+   note:'They explain how to complete each skill taught so far. This is the majority of the score.'}
+];
+const DEFAULT_WEIGHTS = {exposure:10, training:20, guidance:20, review:50};
+const DEFAULT_SKILLS = ['TIME CARD','FUELING TRUCKS','CLEANING TRUCKS','RESTOCKING TRUCKS','LOADING TRUCKS','PARKING TRUCKS','DRIVING TEST','ATTACHING TRAILERS','DETACHING TRAILERS','LOADING TRAILERS','STRAPPING DOWN LOADS','LOADING WIRE TRAILERS','PICKING UP MATERIALS','DELIVERING MATERIALS','STOCKING MATERIALS','OFF LOADING JOB DELIVERIES','FORKLIFT TRAINING','USING THE FORKLIFT','FORKLIFT CERTIFICATION','STRIPPING WIRE','ASSEMBLING ANCHOR BOLTS','MAKING PANCAKES','MAKING BOXES','MAKING BLOCK OUTS','FRAMING UP LUMINAIRES','VISORING TRAFFIC SIGNALS','PREPPING S/L POLES','PREPPING T/S SHAFTS',"PREPPING 90'S",'FILLING UP GAS CANS','RECEIVING DIESEL ORDER','CLEANING OUT THE VACTOR','LOAD & UNLOAD MINI X','USING THE PLASMA CUTTER','SCRAPPING STEEL','THROWING AWAY TRASH','BATHROOM CLEAN UP','WAREHOUSING MATERIALS','OUT OF STOCK MATERIALS'];
+const DEFAULT_RATERS = ['JV PERRIERA','CESAR BUENROSTRO','PARKER COFFEY','JEFFEREY LANZA','JOSH MOLINA','THOMAS PEARSON','JULIAN DeLEON','JORGE BUENROSTRO','TJ JEFFERSON','EDWARD WILLIAMS III','ANDREW','BILIN YANG','RICKY GIBSON II'];
+const RATINGS = ['GOOD','OK','POOR'];
+const DEFAULT_TRAININGS = [{"id": "tr_wire","title": "An Essential Guide to Wire","skills": ["s12","s8"],"passMark": 80,"file": null,"suggestedFile": "Wire.pdf","questions": [{"q": "Stranded wire usually has how many twisted copper wires inside the jacket?","options": ["1","7","12","3"],"answer": 1},{"q": "The twisting of the individual wires in stranded wire is called:","options": ["Braiding","Jacketing","Looping","Cabling"],"answer": 3},{"q": "Solid wire is used mostly for:","options": ["Communication data lines","Street light power","Video detection systems","Wiring traffic signals on a mast arm"],"answer": 3},{"q": "How do you tell stranded wire from solid wire?","options": ["Weigh the reel","Visually look at the copper wire inside the jacket","Read the reel tag only","Check the jacket color"],"answer": 1},{"q": "Which is our most common wire, used for street light power?","options": ["Standard gauged wire (#2, #4, #6, #8, #10)","Cat wire","Coax cable","Loop lead-in cable"],"answer": 0},{"q": "When lifting a wire trailer bar with the forklift, wrap the chain:","options": ["Around the bar at one point in the middle","Around the wire on the reel","Around the reel flanges","Around the bar at two evenly spaced points"],"answer": 3},{"q": "What goes between every reel and on the outside ends of the bar?","options": ["A 4x4 block","Nothing","A PVC spacer","A ratchet strap"],"answer": 2},{"q": "The locking pin on the hitch latch must pass through the:","options": ["Jack stand","Safety chains","Trailer power cable","Break away cable"],"answer": 3},{"q": "If a trailer power cable is broken, you should:","options": ["Unplug it and drive without lights","Take the trailer out and report it later","Tape it up and go","Tell a supervisor right away; the trailer does not go out until it is repaired"],"answer": 3},{"q": "When hooking up the safety chains, the hook opening should face:","options": ["Toward the outside of the vehicle","Toward the inside of the vehicle","Up","Down toward the road"],"answer": 0}]},{"id": "tr_strap","title": "Strapping It Down","skills": ["s10","s11","s5"],"passMark": 80,"file": null,"suggestedFile": "Strap_Down.pdf","questions": [{"q": "When loading a trailer, the heaviest items go:","options": ["Wherever they fit","Closest to the tongue of the trailer","On top of the lighter items","At the back of the trailer"],"answer": 1},{"q": "Poles or shafts that are too long may hang off:","options": ["The back edge only, wrapped with a red flag","Nowhere; they must be cut down","The front of the trailer","Either side of the trailer"],"answer": 0},{"q": "What is the maximum number of pole layers that can be stacked safely?","options": ["3","5","2","4"],"answer": 0},{"q": "When stacking poles, what is used to support the next layer and keep it level?","options": ["Empty reels","4x4s","Ratchet straps","Sonotubes"],"answer": 1},{"q": "Traffic signal heads on the crane deck can be stacked no more than:","options": ["3 high","2 high","4 high","1 high only"],"answer": 1},{"q": "Why put a twist in long leftover strap ends?","options": ["It makes the strap stronger","It is easier to unhook later","It keeps the strap clean","It cuts down flapping in the wind that can loosen the strap"],"answer": 3},{"q": "When loading luminaire arms, the wires running up the arm should be kept:","options": ["Under the arm","Pulled out of the arm","On top of the arm","Hanging off the side"],"answer": 2},{"q": "The unbreakable commandment: every item gets at least how many straps?","options": ["4","3","2","1"],"answer": 2}]},{"id": "tr_cdl","title": "CDL Protocol: Loading & Unloading Equipment","skills": ["s7","s14","s16","s33"],"passMark": 80,"file": null,"suggestedFile": "CDL_Protocol.pdf","questions": [{"q": "How often should a trailer be inspected?","options": ["Only when something looks wrong","Once a month","Every time before it is used","Once a week"],"answer": 2},{"q": "Route planning helps you avoid:","options": ["Only traffic congestion","Low bridges, narrow passages, weight limits, and traffic congestion","Only toll roads","Nothing; GPS handles it"],"answer": 1},{"q": "Heavy equipment or materials with metal edges are secured with:","options": ["One ratchet strap","Rope","Chains and binders, with 5 points of contact for heavy equipment","Bungee cords"],"answer": 2},{"q": "A load on the trailer should be:","options": ["Wherever it fits","Centered, straight, against the headboard, and evenly distributed","Toward the back of the trailer","Off to one side"],"answer": 1},{"q": "When stacking tapered poles, what do you use to keep them straight?","options": ["Nothing; the taper is fine","Traffic cones","Extra straps only","Wood to prop up the middle and tops"],"answer": 3},{"q": "No moves should be made until:","options": ["Eye contact is made with everyone in the area","The engine warms up","The supervisor leaves","The radio is on"],"answer": 0},{"q": "After a road accident, who do you call FIRST?","options": ["The safety manager","Your supervisor","911","The other driver's insurance"],"answer": 2},{"q": "Where is the Auto Accident Report Form?","options": ["In the yard office","On the company website","In the breakroom","In the glove box of every truck"],"answer": 3}]},{"id": "tr_found","title": "Foundations & Concrete Work","skills": ["s21","s22","s23"],"passMark": 80,"file": null,"suggestedFile": "Foundations.pdf","questions": [{"q": "Anchor bolt measurements use T.L.C. What does it stand for?","options": ["Threads, Length, Curve","Thickness, Length, Clamp","Threads, Level, Cap","Top, Length, Circle"],"answer": 0},{"q": "Where is an anchor bolt's diameter measured?","options": ["At the curve tip","At the bend","At the middle of the bolt","At the threads"],"answer": 3},{"q": "How do you measure an anchor bolt template?","options": ["From the center of the template to one hole","Around the outside edge","Corner to corner of the plate","From the middle of one bolt hole to the middle of the opposite bolt hole"],"answer": 3},{"q": "What are the standard inside dimensions of a foundation box?","options": ["30\" x 30\" x 4'","24\" x 24\" x 3'","24.5\" x 24.5\" x 4'","18\" x 18\" x 4'"],"answer": 2},{"q": "What makes a Clark County box different?","options": ["It is made from plywood instead of OSB","Internal 8\" blocks","It has no strapping","External 2x4 supports and NO internal supports"],"answer": 3},{"q": "Even when a foundation has a pancake, it still ALWAYS needs a:","options": ["Tremmy","Second pancake","Sonotube","Ground plate"],"answer": 3},{"q": "Why are XX, XXA and XXB setups not assembled in the yard?","options": ["They need special bolts","They are too heavy to transport once built, so they are assembled in the field","The inspector must build them","They are made by the vendor"],"answer": 1},{"q": "When a generator comes back to the yard, always check that:","options": ["The tank is empty","The fuel valve is turned off","The oil was changed","It has been washed"],"answer": 1}]},{"id": "tr_sept","title": "September Safety Meeting: Pre-Trip, Walk Arounds & Fall Protection","skills": [],"passMark": 80,"file": null,"suggestedFile": "Sept_Safety_Meeting.pdf","questions": [{"q": "When should a Pre-Trip Safety Check be done?","options": ["Once a week","Every time you take a vehicle to or from the yard, a jobsite, vendor, or entity","Only on long trips","Only when told to"],"answer": 1},{"q": "Straps or chains were loosened or adjusted. What now?","options": ["Nothing; they were already checked","Check it at the end of the day","Keep driving","Do another Pre-Trip Safety Check"],"answer": 3},{"q": "After a few miles in transit you should:","options": ["Speed up to make time","Pull over when safe and recheck materials and straps","Wait until you arrive","Call the yard"],"answer": 1},{"q": "Who is responsible for the walk around?","options": ["The yard manager","The mechanic","The driver of the vehicle","Whoever is free"],"answer": 2},{"q": "The daily checklist slip must be turned in:","options": ["At the end of the month","Once a week","Daily, even if nothing is wrong","Only when something is broken"],"answer": 2},{"q": "Where is the mechanic's basket?","options": ["In the yard office","In the breakroom","At the fuel station","In each truck"],"answer": 1},{"q": "Unless on a ladder, scaffold or scissor lift, OSHA requires fall protection at:","options": ["Any height","10 feet or more","6 feet or more","4 feet or more"],"answer": 3},{"q": "A PFAS anchorage point must be able to handle:","options": ["5,000 pounds","2,000 pounds","3,000 pounds","4,000 pounds"],"answer": 0}]},{"id": "tr_orient","title": "New Employee Orientation","skills": [],"passMark": 80,"file": null,"suggestedFile": "Orientation_Base.pdf","questions": [{"q": "Where do you evacuate to in an emergency at MC4?","options": ["Your truck","The breakroom","The front office","The posted area at the south end of the parking lot"],"answer": 3},{"q": "In a vehicle accident, who do you call first?","options": ["911, then your supervisor and safety manager","Your family","Your supervisor only","No one until you get back"],"answer": 0},{"q": "What should you report?","options": ["Nothing if no one was hurt","ALL injuries, illnesses, and near-misses","Only injuries that need a doctor","Only serious injuries"],"answer": 1},{"q": "Your PPE is damaged. What do you do?","options": ["Throw it away and work without it","Buy new gear yourself","Bring it to the Safety Manager to swap it for new","Tape it and keep using it"],"answer": 2},{"q": "If you lose or misplace your PPE:","options": ["The company replaces it for free","You can borrow someone else's","You are responsible for providing your own","You can skip wearing it"],"answer": 2},{"q": "When must eye protection be worn?","options": ["Only on jobsites","Only when cutting","Always, on site and in the Yard","Only on sunny days"],"answer": 2},{"q": "How should you treat any wire, tool, or pole?","options": ["Ask after you touch it","Only check it if it sparks","As if it is energized","As if it is safe"],"answer": 2},{"q": "A ladder is damaged. What do you do?","options": ["Leave it on the truck","Fix it yourself","Use it carefully","Don't use it; bring it to the Yard Manager to be replaced"],"answer": 3}]},{"id": "tr_orient_elec","title": "New Employee Orientation: Electrician","skills": [],"passMark": 80,"file": null,"suggestedFile": "Orientation_Electrician.pdf","questions": [{"q": "Where do you evacuate to in an emergency at MC4?","options": ["Your truck","The breakroom","The posted area at the south end of the parking lot","The front office"],"answer": 2},{"q": "What safety shoes are allowed for electricians?","options": ["Any work boots","Composite toe only; NO steel toe boots","Steel toe boots","Sneakers are fine"],"answer": 1},{"q": "Which safety vest classes are required?","options": ["Class 3 in the AM, Class 2 in the PM","Any vest","Class 2 in the AM, Class 3 in the PM","Class 1 all day"],"answer": 2},{"q": "If your PFAS (fall arrest system) is damaged or lost:","options": ["You can share one","You can work without it","The company replaces it free","You are required to purchase a replacement"],"answer": 3},{"q": "When must a harness be inspected?","options": ["Before each use","Once a month","Only if it looks worn","Once a year"],"answer": 0},{"q": "Once inside the boom lift you MUST:","options": ["Call your supervisor","Tie off to the correct anchor point","Take off your hard hat","Lower the outriggers"],"answer": 1},{"q": "Before going up in a bucket, make sure the outriggers are:","options": ["Removed","Retracted","Half extended","Fully extended"],"answer": 3},{"q": "How should you treat any wire, tool, or pole?","options": ["As if it is safe","As if it is energized","Ask after you touch it","Only check it if it sparks"],"answer": 1}]}];
+
+
+const SETUP_SQL = `-- MC4 University: run once in Supabase → SQL Editor → New query → Run
+create table if not exists public.mc4u_config (
+  id int primary key default 1 check (id = 1),
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz default now()
+);
+create table if not exists public.mc4u_trainees (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  hire_date date,
+  position text,
+  active boolean not null default true,
+  pin text unique,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz default now()
+);
+alter table public.mc4u_config enable row level security;
+alter table public.mc4u_trainees enable row level security;
+drop policy if exists "staff manage config" on public.mc4u_config;
+create policy "staff manage config" on public.mc4u_config
+  for all to authenticated using (true) with check (true);
+drop policy if exists "staff manage trainees" on public.mc4u_trainees;
+create policy "staff manage trainees" on public.mc4u_trainees
+  for all to authenticated using (true) with check (true);
+
+-- Crew PIN sign-in: returns only that one person's card
+create or replace function public.mc4u_pin_login(p_pin text)
+returns json language sql security definer set search_path = public as $$
+  select json_build_object(
+    'trainee', (select row_to_json(t) from (
+        select id, name, hire_date, position, active, data
+        from public.mc4u_trainees
+        where pin = p_pin and active and length(p_pin) >= 4
+        limit 1) t),
+    'config', (select data from public.mc4u_config where id = 1)
+  );
+$$;
+revoke all on function public.mc4u_pin_login(text) from public;
+grant execute on function public.mc4u_pin_login(text) to anon, authenticated;
+
+-- Crew quiz results: saves one quiz attempt for the PIN holder
+create or replace function public.mc4u_submit_quiz(p_pin text, p_training text, p_score int, p_passed boolean)
+returns json language plpgsql security definer set search_path = public as $$
+declare t public.mc4u_trainees; prev jsonb; q jsonb;
+begin
+  select * into t from public.mc4u_trainees where pin = p_pin and active and length(p_pin) >= 4;
+  if not found then raise exception 'PIN not found'; end if;
+  prev := coalesce(t.data->'quizzes'->p_training, '{}'::jsonb);
+  q := jsonb_build_object(
+    'last', p_score,
+    'best', greatest(coalesce((prev->>'best')::int, 0), p_score),
+    'passed', coalesce((prev->>'passed')::boolean, false) or p_passed,
+    'attempts', coalesce((prev->>'attempts')::int, 0) + 1,
+    'at', now());
+  update public.mc4u_trainees
+     set data = jsonb_set(coalesce(data,'{}'::jsonb) || jsonb_build_object('quizzes', coalesce(data->'quizzes','{}'::jsonb)),
+                          array['quizzes', p_training], q),
+         updated_at = now()
+   where id = t.id;
+  return q;
+end $$;
+revoke all on function public.mc4u_submit_quiz(text,text,int,boolean) from public;
+grant execute on function public.mc4u_submit_quiz(text,text,int,boolean) to anon, authenticated;
+
+-- Training PDFs: crew can view, only supervisors can upload/change
+insert into storage.buckets (id, name, public) values ('mc4u-trainings','mc4u-trainings', true)
+  on conflict (id) do nothing;
+drop policy if exists "mc4u staff upload" on storage.objects;
+create policy "mc4u staff upload" on storage.objects for insert to authenticated with check (bucket_id = 'mc4u-trainings');
+drop policy if exists "mc4u staff update" on storage.objects;
+create policy "mc4u staff update" on storage.objects for update to authenticated using (bucket_id = 'mc4u-trainings');
+drop policy if exists "mc4u staff delete" on storage.objects;
+create policy "mc4u staff delete" on storage.objects for delete to authenticated using (bucket_id = 'mc4u-trainings');`;
+const BUCKET = 'mc4u-trainings';
+const DEFAULT_PASS = 80;
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+function toast(msg, err){ const t=$('#toast'); t.textContent=msg; t.className='show'+(err?' err':''); clearTimeout(t._h); t._h=setTimeout(()=>t.className='',err?4500:2200); }
+function parseDate(s){ if(!s) return null; const [y,m,d]=String(s).slice(0,10).split('-').map(Number); return new Date(y,m-1,d); }
+function fmtDate(s){ const d=parseDate(s); return d? d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+function isoToday(offsetDays=0){ const d=new Date(); d.setDate(d.getDate()+offsetDays); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function currentWeek(t){
+  const h=parseDate(t.hire_date); if(!h) return 1;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const days=Math.floor((today-h)/86400000);
+  return days<0 ? 0 : Math.floor(days/7)+1;
+}
+const phaseOfWeek = w => PHASES.find(p=>p.weeks.includes(w));
+function weekLabel(w){ if(w<=0) return 'Not started'; if(w>WEEKS) return 'Completed'; return 'Wk '+w+' · '+phaseOfWeek(w).label; }
+function weekBadge(w){
+  const p = w>=1&&w<=WEEKS ? phaseOfWeek(w) : null;
+  const bg = p? `var(--${p.key}-bg)` : (w>WEEKS?'#e7f5ec':'#eee');
+  const fg = p? `var(--${p.key})` : (w>WEEKS?'var(--ok)':'var(--muted)');
+  return `<span class="wkbadge" style="background:${bg};color:${fg}">${esc(weekLabel(w))}</span>`;
+}
+function normConfig(c){
+  c = c && typeof c==='object' ? clone(c) : {};
+  if(!Array.isArray(c.skills) || !c.skills.length) c.skills = DEFAULT_SKILLS.map((n,i)=>({id:'s'+(i+1),name:n,active:true}));
+  if(!Array.isArray(c.raters)) c.raters = DEFAULT_RATERS.slice();
+  c.weights = Object.assign({}, DEFAULT_WEIGHTS, c.weights||{});
+  if(!Array.isArray(c.trainings)) c.trainings = clone(DEFAULT_TRAININGS);
+  c.trainings.forEach(tr=>{ tr.skills = Array.isArray(tr.skills)?tr.skills:[]; tr.questions = Array.isArray(tr.questions)?tr.questions:[]; if(tr.passMark==null) tr.passMark=DEFAULT_PASS; });
+  return c;
+}
+function normTrainee(t){
+  t = clone(t||{});
+  t.data = t.data && typeof t.data==='object' ? t.data : {};
+  for(const k of ['marks','attendance','stab','ratings','quizzes']) if(!t.data[k] || typeof t.data[k]!=='object') t.data[k]={};
+  if(t.hire_date) t.hire_date=String(t.hire_date).slice(0,10);
+  if(t.active===undefined) t.active=true;
+  return t;
+}
+function stats(t, config){
+  const skills = config.skills.filter(s=>s.active);
+  const n = skills.length || 1;
+  const m = t.data.marks;
+  const phases = PHASES.map(p=>{
+    const done = skills.filter(s=>p.weeks.some(w=>m[s.id+'|'+w])).length;
+    return {...p, done, pct: done/n};
+  });
+  const W = config.weights;
+  const tot = PHASES.reduce((a,p)=>a+(+W[p.key]||0),0) || 1;
+  const score = Math.round(phases.reduce((a,p)=>a+p.pct*(+W[p.key]||0),0)/tot*100);
+  const cw = currentWeek(t);
+  const elapsed = Math.max(0, Math.min(cw, WEEKS));
+  let missed = 0;
+  for(let w=1; w<=elapsed; w++) missed += +((t.data.attendance[w]||{}).missed||0);
+  const att = elapsed ? Math.round((elapsed*5-missed)/(elapsed*5)*100) : null;
+  const rc = {GOOD:0,OK:0,POOR:0};
+  Object.values(t.data.ratings).forEach(v=>{ if(rc[v]!=null) rc[v]++; });
+  return {phases, score, cw, att, missed, rc, n: skills.length};
+}
+function skillPhaseDone(t, sid){ return PHASES.map(p=>p.weeks.some(w=>t.data.marks[sid+'|'+w])); }
+function pills(t, sid){
+  return `<div class="pills">${skillPhaseDone(t,sid).map((d,i)=>`<span class="pill" title="${PHASES[i].label}${d?' — done':''}" style="${d?`background:var(--${PHASES[i].key});color:#fff`:''}">${PHASES[i].short}</span>`).join('')}</div>`;
+}
+function phaseBars(s){
+  return `<div class="phasebars">${s.phases.map(p=>`
+    <div class="pb"><span>${p.label}</span><div class="bar"><i style="width:${Math.round(p.pct*100)}%;background:var(--${p.key})"></i></div><span class="r">${p.done}/${s.n}</span></div>`).join('')}</div>`;
+}
+
+/* ---------------- storage (Supabase or demo) ---------------- */
+const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+const DEMO_KEY = 'mc4u_demo_v3';
+let sb = null, demoMem = null;
+
+function demoSeed(){
+  const config = normConfig(null);
+  config.trainings = clone(DEFAULT_TRAININGS);
+  const mk =(name, daysAgo, pin, fill) => {
+    const t = normTrainee({id:'d'+pin, name, hire_date: isoToday(-daysAgo), position:'Yard', active:true, pin:String(pin)});
+    const cw = currentWeek(t);
+    let r = pin*7;
+    const rnd = () => (r = (r*9301+49297)%233280)/233280;
+    for(let w=1; w<Math.min(cw, WEEKS+1); w++){
+      config.skills.forEach(s=>{ if(rnd()<fill/ (phaseOfWeek(w).weeks.length)) t.data.marks[s.id+'|'+w]={by:'demo',at:new Date().toISOString()}; });
+      t.data.attendance[w] = {missed: rnd()<0.15 ? 1 : 0, note:''};
+    }
+    config.raters.slice(0,6).forEach(rn=>{ if(cw>3) t.data.ratings[rn]=RATINGS[Math.floor(rnd()*rnd()*3)]; });
+    return t;
+  };
+  return {config, trainees:[
+    mk('Sample — Alex Ortiz', 10, 1111, .55),
+    mk('Sample — Dana Price', 40, 2222, .7),
+    mk('Sample — Luis Romero', 75, 3333, .8),
+    mk('Sample — Sam Whitfield', 100, 4444, .9)
+  ]};
+}
+function demoLoad(){
+  if(demoMem) return demoMem;
+  try{ const s=localStorage.getItem(DEMO_KEY); if(s){ demoMem=JSON.parse(s); return demoMem; } }catch(e){}
+  demoMem = demoSeed(); demoSave(demoMem); return demoMem;
+}
+function demoSave(d){ demoMem=d; try{ localStorage.setItem(DEMO_KEY, JSON.stringify(d)); }catch(e){} }
+
+const Store = {
+  async init(){
+    if(!LIVE) return null;
+    if(!window.supabase) throw new Error('Could not load the Supabase library. Check your internet connection.');
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const {data} = await sb.auth.getSession();
+    return data.session ? {email:data.session.user.email} : null;
+  },
+  async signIn(email, pw){
+    if(LIVE){ const {data,error}=await sb.auth.signInWithPassword({email, password:pw}); if(error) throw error; return {email:data.user.email}; }
+    return {email: email || 'demo supervisor'};
+  },
+  async signOut(){ if(LIVE) await sb.auth.signOut(); },
+  async loadAll(){
+    if(LIVE){
+      const c = await sb.from('mc4u_config').select('data').eq('id',1).maybeSingle();
+      if(c.error) throw c.error;
+      let config = c.data && c.data.data && c.data.data.skills ? c.data.data : null;
+      if(!config){ config = normConfig(null); await this.saveConfig(config); }
+      const t = await sb.from('mc4u_trainees').select('*').order('name');
+      if(t.error) throw t.error;
+      return {config: normConfig(config), trainees: t.data.map(normTrainee)};
+    }
+    const d = demoLoad();
+    return {config: normConfig(d.config), trainees: d.trainees.map(normTrainee)};
+  },
+  async saveConfig(config){
+    if(LIVE){ const {error}=await sb.from('mc4u_config').upsert({id:1, data:config, updated_at:new Date().toISOString()}); if(error) throw error; return; }
+    const d = demoLoad(); d.config = clone(config); demoSave(d);
+  },
+  async saveTrainee(t){
+    const row = {name:t.name, hire_date:t.hire_date||null, position:t.position||'', active:!!t.active, pin:t.pin||null, data:t.data, updated_at:new Date().toISOString()};
+    if(LIVE){
+      const q = t.id ? sb.from('mc4u_trainees').update(row).eq('id',t.id) : sb.from('mc4u_trainees').insert(row);
+      const {data,error} = await q.select().single();
+      if(error){ if(String(error.message).includes('duplicate') || error.code==='23505') throw new Error('That PIN is already used by someone else.'); throw error; }
+      return normTrainee(data);
+    }
+    const d = demoLoad();
+    if(row.pin && d.trainees.some(x=>x.pin===row.pin && x.id!==t.id)) throw new Error('That PIN is already used by someone else.');
+    if(!t.id){ const n={...row, id:'d'+uid()}; d.trainees.push(n); demoSave(d); return normTrainee(n); }
+    const i = d.trainees.findIndex(x=>x.id===t.id);
+    d.trainees[i] = {...row, id:t.id}; demoSave(d); return normTrainee(d.trainees[i]);
+  },
+  async patchTrainee(id, fn){
+    let fresh;
+    if(LIVE){ const {data,error}=await sb.from('mc4u_trainees').select('*').eq('id',id).single(); if(error) throw error; fresh=normTrainee(data); }
+    else fresh = normTrainee(demoLoad().trainees.find(x=>x.id===id));
+    fn(fresh);
+    return this.saveTrainee(fresh);
+  },
+  async deleteTrainee(id){
+    if(LIVE){ const {error}=await sb.from('mc4u_trainees').delete().eq('id',id); if(error) throw error; return; }
+    const d = demoLoad(); d.trainees = d.trainees.filter(x=>x.id!==id); demoSave(d);
+  },
+  async uploadPdf(file, trainingId){
+    if(LIVE){
+      const path = trainingId + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const {error} = await sb.storage.from(BUCKET).upload(path, file, {upsert:true, contentType:'application/pdf'});
+      if(error) throw error;
+      const {data} = sb.storage.from(BUCKET).getPublicUrl(path);
+      return {path, url:data.publicUrl, name:file.name, size:file.size};
+    }
+    const url = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsDataURL(file); });
+    if(file.size > 3*1024*1024) toast('Demo mode: large PDFs only last until you reload. Go live to keep them.', true);
+    return {path:null, url, name:file.name, size:file.size};
+  },
+  async removePdf(f){ if(LIVE && f && f.path){ await sb.storage.from(BUCKET).remove([f.path]); } },
+  async submitQuiz(pin, trainingId, score, passed){
+    if(LIVE){
+      const {data,error} = await sb.rpc('mc4u_submit_quiz', {p_pin:pin, p_training:trainingId, p_score:score, p_passed:passed});
+      if(error) throw error; return data;
+    }
+    const d = demoLoad(); const t = d.trainees.find(x=>String(x.pin)===String(pin));
+    if(!t) throw new Error('PIN not found');
+    t.data = t.data||{}; t.data.quizzes = t.data.quizzes||{};
+    const prev = t.data.quizzes[trainingId]||{};
+    const q = {last:score, best:Math.max(prev.best||0,score), passed:!!prev.passed||passed, attempts:(prev.attempts||0)+1, at:new Date().toISOString()};
+    t.data.quizzes[trainingId] = q; demoSave(d); return q;
+  },
+  async pinLogin(pin){
+    if(LIVE){
+      const {data,error} = await sb.rpc('mc4u_pin_login', {p_pin:pin});
+      if(error) throw error;
+      if(!data || !data.trainee) return null;
+      return {config:normConfig(data.config), trainee:normTrainee(data.trainee)};
+    }
+    const d = demoLoad(); const t = d.trainees.find(x=>String(x.pin)===String(pin) && x.active);
+    return t ? {config:normConfig(d.config), trainee:normTrainee(t)} : null;
+  }
+};
+
+/* ---------------- state ---------------- */
+const S = {
+  role:null, user:null, config:normConfig(null), trainees:[],
+  view:'list', currentId:null, tab:'skills', filter:'active', search:'',
+  loginTab:'staff', pin:'', crew:null, crewFilter:'all',
+  trainingId:null, trPane:'slides', quiz:null, draft:null, crewView:'home'
+};
+const trainingById = (cfg, id) => (cfg.trainings||[]).find(t=>t.id===id);
+const trainingsForSkill = (cfg, sid) => (cfg.trainings||[]).filter(t=>t.skills.includes(sid));
+const cur = () => S.trainees.find(t=>t.id===S.currentId);
+
+async function mutate(id, fn){
+  const t = S.trainees.find(x=>x.id===id); if(!t) return;
+  fn(t); render();
+  try{
+    const saved = await Store.patchTrainee(id, fn);
+    const i = S.trainees.findIndex(x=>x.id===id); if(i>-1) S.trainees[i]=saved;
+  }catch(e){ toast('Could not save: '+(e.message||e), true); await reload(); }
+}
+async function saveConfig(next, msg){
+  S.config = normConfig(next); render();
+  try{ await Store.saveConfig(S.config); if(msg) toast(msg); }
+  catch(e){ toast('Could not save settings: '+(e.message||e), true); await reload(); }
+}
+async function reload(){
+  try{ const d=await Store.loadAll(); S.config=d.config; S.trainees=d.trainees; }
+  catch(e){ toast('Could not load data: '+(e.message||e), true); }
+  render();
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  const app = $('#app');
+  if(!S.role){ app.innerHTML = renderLogin(); return; }
+  if(S.role==='crew'){
+    const tr = S.crewView==='training' ? trainingById(S.crew.config, S.trainingId) : null;
+    app.innerHTML = tr ? crewTop() + `<div class="crew" style="max-width:900px">${renderTrainingPage(tr, S.crew.config, 'crew')}</div>` : renderCrew();
+    afterRender(tr); return;
+  }
+  let body = '', tr = null;
+  if(S.view==='list') body = renderList();
+  else if(S.view==='trainee') body = cur() ? renderTrainee() : renderList();
+  else if(S.view==='settings') body = renderSettings();
+  else if(S.view==='trainings') body = renderTrainings();
+  else if(S.view==='training'){ tr = trainingById(S.config, S.trainingId); body = tr ? renderTrainingPage(tr, S.config, 'staff') : renderTrainings(); }
+  else if(S.view==='training-edit') body = renderTrainingEditor();
+  app.innerHTML = `
+    ${topbar()}
+    ${LIVE?'':`<div class="banner"><b>Demo mode</b> — sample data saved in this browser only. Add your Supabase details at the top of the file to go live (see Settings → Connection).</div>`}
+    <div class="page">${body}</div>`;
+  if(S.view==='list') renderRows();
+  afterRender(tr);
+}
+function afterRender(tr){ if(tr && S.trPane==='slides' && $('#viewer')) showPdf(tr.file); }
+function topbar(){
+  return `<div class="topbar">
+    <div class="brand"><img class="crest" src="${LOGO}" alt="MC4 University crest"><div><b>MC4 University</b><small>${esc(PROGRAM_NAME)}</small></div></div>
+    <div class="nav">
+      <button class="${S.view==='list'||S.view==='trainee'?'on':''}" data-action="nav" data-v="list">Crew</button>
+      <button class="${S.view.startsWith('training')?'on':''}" data-action="nav" data-v="trainings">Trainings</button>
+      <button class="${S.view==='settings'?'on':''}" data-action="nav" data-v="settings">Settings</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="who">${esc(S.user&&S.user.email||'')}</span>
+    <button class="btn sm ghost-dark" data-action="logout">Sign out</button>
+  </div>`;
+}
+
+function renderLogin(){
+  const staff = S.loginTab==='staff';
+  return `<div class="login"><div class="card">
+    <img class="crest-lg" src="${LOGO}" alt="MC4 University">
+    <div class="tag">${esc(PROGRAM_NAME)}</div>
+    <div class="seg">
+      <button class="${staff?'on':''}" data-action="logintab" data-v="staff">Supervisor</button>
+      <button class="${!staff?'on':''}" data-action="logintab" data-v="crew">Crew</button>
+    </div>
+    ${staff ? `
+      <form id="staffForm">
+        <div class="field"><label>Email</label><input class="inp" id="em" type="email" autocomplete="username" ${LIVE?'required':''} placeholder="${LIVE?'':'Any email works in demo'}"></div>
+        <div class="field"><label>Password</label><input class="inp" id="pw" type="password" autocomplete="current-password" ${LIVE?'required':''}></div>
+        <button class="btn primary" style="width:100%;justify-content:center;padding:11px" type="submit">Sign in</button>
+        <div class="err-msg" id="lerr"></div>
+      </form>` : `
+      <div style="text-align:center;font-weight:600;color:var(--muted)">Enter your PIN</div>
+      <div class="pindots">${[0,1,2,3,4,5].slice(0,Math.max(4,S.pin.length)).map(i=>`<i class="${i<S.pin.length?'f':''}"></i>`).join('')}</div>
+      <div class="keypad">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-action="key" data-k="${n}">${n}</button>`).join('')}
+        <button data-action="key" data-k="clr">⌫</button>
+        <button data-action="key" data-k="0">0</button>
+        <button class="go" data-action="key" data-k="go">Go</button>
+      </div>
+      <div class="err-msg" id="lerr"></div>`}
+    <div class="hint">${LIVE ? (staff?'Supervisor accounts are added in Supabase.':'Ask your supervisor for your PIN.') : 'Demo mode: any email works. Crew PINs: 1111, 2222, 3333, 4444.'}</div>
+  </div></div>`;
+}
+
+function filtered(){
+  const q = S.search.trim().toLowerCase();
+  return S.trainees.filter(t=>{
+    if(S.filter==='active' && (!t.active || currentWeek(t)>WEEKS)) return false;
+    if(S.filter==='done' && t.active && currentWeek(t)<=WEEKS) return false;
+    if(q && !(t.name||'').toLowerCase().includes(q) && !(t.position||'').toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function renderList(){
+  const act = S.trainees.filter(t=>t.active && currentWeek(t)<=WEEKS);
+  const st = act.map(t=>stats(t,S.config));
+  const avg = a => a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : '—';
+  const counts = PHASES.map(p=>act.filter(t=>p.weeks.includes(currentWeek(t))).length);
+  return `
+    <div class="tiles">
+      <div class="card tile"><div class="lbl">In program</div><div class="val">${act.length}</div></div>
+      <div class="card tile"><div class="lbl">By phase</div>
+        <div class="phase-counts">${PHASES.map((p,i)=>`<span class="pc"><span class="dot" style="background:var(--${p.key})"></span>${p.label} <b>${counts[i]}</b></span>`).join('')}</div></div>
+      <div class="card tile"><div class="lbl">Average score</div><div class="val">${avg(st.map(s=>s.score))}</div></div>
+      <div class="card tile"><div class="lbl">Average attendance</div><div class="val">${(()=>{const v=avg(st.filter(s=>s.att!=null).map(s=>s.att));return v==='—'?v:v+'%';})()}</div></div>
+    </div>
+    <div class="toolbar">
+      <input class="search" id="search" placeholder="Search by name or position" value="${esc(S.search)}">
+      <div class="seg">
+        ${[['active','In program'],['done','Completed / inactive'],['all','All']].map(([k,l])=>`<button class="${S.filter===k?'on':''}" data-action="filter" data-v="${k}">${l}</button>`).join('')}
+      </div>
+      <div class="spacer"></div>
+      <button class="btn primary" data-action="add">+ Add trainee</button>
+    </div>
+    <div class="rows" id="rows"></div>`;
+}
+function renderRows(){
+  const el = $('#rows'); if(!el) return;
+  const list = filtered();
+  if(!list.length){ el.innerHTML = `<div class="card empty">${S.trainees.length?'No one matches this view.':'No trainees yet. Click <b>+ Add trainee</b> to start.'}</div>`; return; }
+  el.innerHTML = list.map(t=>{
+    const s = stats(t,S.config);
+    return `<div class="card trow" data-action="open" data-id="${esc(t.id)}">
+      <div><div class="nm">${esc(t.name)}${t.active?'':' <span class="wkbadge" style="background:#eee;color:var(--muted)">Inactive</span>'}</div><div class="sub">${esc(t.position||'—')} · Hired ${fmtDate(t.hire_date)}</div></div>
+      <div class="wkcol">${weekBadge(s.cw)}</div>
+      <div class="minibars">${s.phases.map(p=>`<div class="mb"><div class="t"><span>${p.label}</span><span>${Math.round(p.pct*100)}%</span></div><div class="bar"><i style="width:${Math.round(p.pct*100)}%;background:var(--${p.key})"></i></div></div>`).join('')}</div>
+      <div class="att">${s.att==null?'—':s.att+'%'}<small>Attendance</small></div>
+      <div class="score">${s.score}<small>Score</small></div>
+    </div>`;
+  }).join('');
+}
+
+function renderTrainee(){
+  const t = cur(), s = stats(t,S.config);
+  const tabs = [['skills','Key skills'],['attendance','Attendance'],['stab','STAB / KOT'],['team','Team integration'],['quizzes','Trainings']];
+  let content = '';
+  if(S.tab==='quizzes') content = renderTraineeQuizzes(t);
+  if(S.tab==='skills') content = renderGrid(t, s, true);
+  if(S.tab==='attendance') content = renderAttendance(t, s);
+  if(S.tab==='stab') content = renderStab(t, s);
+  if(S.tab==='team') content = renderTeam(t, s);
+  return `
+    <button class="back" data-action="nav" data-v="list">← All crew</button>
+    <div class="card thead">
+      <div>
+        <h1>${esc(t.name)}</h1>
+        <div class="meta"><span>Position <b>${esc(t.position||'—')}</b></span><span>Hired <b>${fmtDate(t.hire_date)}</b></span><span>PIN <b>${esc(t.pin||'—')}</b></span></div>
+        <div style="margin-top:10px">${weekBadge(s.cw)}${t.active?'':' <span class="wkbadge" style="background:#eee;color:var(--muted)">Inactive</span>'}</div>
+        <div class="hbtns">
+          <button class="btn" data-action="edit">Edit details</button>
+          <button class="btn" data-action="print">Print</button>
+        </div>
+      </div>
+      <div>
+        <div class="scorebox">
+          <div class="bigscore"><div class="n">${s.score}</div><div class="l">Score</div></div>
+          ${phaseBars(s)}
+        </div>
+        <div class="sidestats">
+          <span>Attendance <b>${s.att==null?'—':s.att+'%'}</b>${s.missed?` (${s.missed} day${s.missed>1?'s':''} missed)`:''}</span>
+          <span>Team: <b style="color:var(--ok)">${s.rc.GOOD} good</b> · <b style="color:var(--guidance)">${s.rc.OK} ok</b> · <b style="color:var(--danger)">${s.rc.POOR} poor</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="tabs">${tabs.map(([k,l])=>`<button class="${S.tab===k?'on':''}" data-action="tab" data-v="${k}">${l}</button>`).join('')}</div>
+    ${content}`;
+}
+function renderGrid(t, s, editable){
+  const skills = S.config.skills.filter(x=>x.active);
+  const cw = s.cw;
+  const head1 = PHASES.map(p=>`<th colspan="${p.weeks.length}" class="ph gs" style="background:var(--${p.key})">${p.label}</th>`).join('');
+  const head2 = PHASES.flatMap(p=>p.weeks.map((w,i)=>`<th class="${i===0?'gs':''} ${w===cw?'curwk curcol':''}">Wk ${w}</th>`)).join('');
+  const rows = skills.map(sk=>{
+    const cells = PHASES.flatMap(p=>p.weeks.map((w,i)=>{
+      const m = t.data.marks[sk.id+'|'+w];
+      const title = m ? `Marked${m.by?' by '+m.by:''}${m.at?' on '+new Date(m.at).toLocaleDateString():''}` : (editable?`Mark ${sk.name} — week ${w}`:'');
+      return `<td class="c ${i===0?'gs':''} ${w===cw?'curcol':''}"><button class="x ${m?'on':''}" ${editable?`data-action="mark" data-s="${sk.id}" data-w="${w}"`:'disabled'} title="${esc(title)}" style="${m?`background:var(--${p.key});border-color:var(--${p.key})`:''}">✕</button></td>`;
+    })).join('');
+    return `<tr><td class="sk">${esc(sk.name)}${bookBtns(S.config, sk.id)}</td>${cells}<td>${pills(t, sk.id)}</td></tr>`;
+  }).join('');
+  return `<div class="card grid-wrap ${editable?'editable':''}"><table class="grid">
+      <thead><tr><th class="sk" rowspan="2">Key skill</th>${head1}<th rowspan="2" style="color:var(--muted)">Phases done</th></tr><tr>${head2}</tr></thead>
+      <tbody>${rows || `<tr><td class="sk" colspan="15">No skills set up — add some in Settings.</td></tr>`}</tbody>
+    </table></div>
+    <div class="legend">${PHASES.map(p=>`<div style="background:var(--${p.key}-bg)"><b style="color:var(--${p.key})">${p.label} · Wk ${p.weeks[0]}–${p.weeks[p.weeks.length-1]} · ${S.config.weights[p.key]}%</b>${esc(p.note)}</div>`).join('')}</div>`;
+}
+function renderAttendance(t, s){
+  const weeks = Array.from({length:WEEKS},(_,i)=>i+1);
+  return `<p class="note">Days missed out of 5 for each week. Attendance % counts weeks up to the current week.</p>
+  <div class="weeks">${weeks.map(w=>{
+    const a = t.data.attendance[w]||{};
+    return `<div class="wkcard ${w===s.cw?'cur':''}"><h4>Week ${w} <span style="font-size:12px;color:var(--${phaseOfWeek(w).key})">${phaseOfWeek(w).label}</span></h4>
+      <div class="field"><label>Days missed</label>
+        <select class="inp" data-change="att-missed" data-w="${w}">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${(+a.missed||0)===n?'selected':''}>${n} / 5</option>`).join('')}</select></div>
+      <div class="field" style="margin:0"><label>Which days / notes</label><input class="inp" data-change="att-note" data-w="${w}" value="${esc(a.note||'')}" placeholder="e.g. Mon, Tue — sick"></div>
+    </div>`;}).join('')}</div>`;
+}
+function renderStab(t, s){
+  return `<div class="card pad"><p class="note">Weekly STAB / KOT notes. These are kept for the record and don't count toward the score.</p>
+    ${Array.from({length:WEEKS},(_,i)=>i+1).map(w=>`
+      <div class="stabrow"><div class="w" style="${w===s.cw?'color:var(--accent)':''}">Week ${w}<small>${phaseOfWeek(w).label}</small></div>
+      <textarea class="inp" rows="2" data-change="stab" data-w="${w}" placeholder="Notes">${esc(t.data.stab[w]||'')}</textarea></div>`).join('')}
+  </div>`;
+}
+function renderTeam(t){
+  if(!S.config.raters.length) return `<div class="card empty">No team members set up. Add them in Settings.</div>`;
+  return `<div class="card pad"><p class="note">How well this person fits in with each team member. Click a rating again to clear it.</p>
+    <div class="raters">${S.config.raters.map(r=>{
+      const v = t.data.ratings[r];
+      return `<div class="rater"><span class="n">${esc(r)}</span><div class="rate">${RATINGS.map(x=>`<button class="${x} ${v===x?'on':''}" data-action="rate" data-r="${esc(r)}" data-v="${x}">${x==='GOOD'?'Good':x==='OK'?'OK':'Poor'}</button>`).join('')}</div></div>`;
+    }).join('')}</div></div>`;
+}
+
+function renderSettings(){
+  const c = S.config;
+  const wsum = PHASES.reduce((a,p)=>a+(+c.weights[p.key]||0),0);
+  return `<div class="settings">
+    <div class="card pad">
+      <h2>Key skills</h2>
+      <p class="note">Rename, reorder, or hide skills. Hidden skills are kept with their history but don't show or count toward scores.</p>
+      <div class="skill-ed">${c.skills.map((s,i)=>`
+        <div class="r ${s.active?'':'off'}">
+          <span class="num">${i+1}</span>
+          <input class="inp" data-change="skill-name" data-i="${i}" value="${esc(s.name)}">
+          <span style="display:flex;gap:4px">
+            <button class="iconbtn" title="Move up" data-action="skill-move" data-i="${i}" data-d="-1">↑</button>
+            <button class="iconbtn" title="Move down" data-action="skill-move" data-i="${i}" data-d="1">↓</button>
+            <button class="iconbtn" title="${s.active?'Hide':'Show'}" data-action="skill-toggle" data-i="${i}">${s.active?'👁':'⊘'}</button>
+          </span>
+        </div>`).join('')}</div>
+      <div class="addrow"><input class="inp" id="newSkill" placeholder="New skill name"><button class="btn" data-action="skill-add">Add skill</button></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card pad">
+        <h2>Score weights</h2>
+        <p class="note">A skill counts toward a phase when it has an X in any week of that phase. Score = weighted % of skills done in each phase.</p>
+        <div class="weights">${PHASES.map(p=>`<div class="field"><label style="color:var(--${p.key})">${p.label} %</label><input class="inp" type="number" min="0" max="100" data-change="weight" data-k="${p.key}" value="${+c.weights[p.key]||0}"></div>`).join('')}</div>
+        <div class="note" style="margin:0">Total: <b style="color:${wsum===100?'var(--ok)':'var(--danger)'}">${wsum}%</b>${wsum===100?'':' — should add up to 100'}</div>
+      </div>
+      <div class="card pad">
+        <h2>Team members</h2>
+        <p class="note">The people who rate each trainee on Team integration.</p>
+        <div class="raters" style="margin-bottom:10px">${c.raters.map((r,i)=>`<div class="rater" style="padding:6px 0"><span class="n">${esc(r)}</span><button class="iconbtn" title="Remove" data-action="rater-del" data-i="${i}">✕</button></div>`).join('')}</div>
+        <div class="addrow"><input class="inp" id="newRater" placeholder="Name"><button class="btn" data-action="rater-add">Add</button></div>
+      </div>
+      <div class="card pad">
+        <h2>Connection</h2>
+        <p class="note">Status: <b style="color:${LIVE?'var(--ok)':'var(--guidance)'}">${LIVE?'Live — connected to Supabase':'Demo mode — data saved in this browser only'}</b></p>
+        ${LIVE?'':`<ol class="steps">
+          <li>In Supabase, open your project → <b>SQL Editor</b> → <b>New query</b>. Paste the setup SQL (button below) and click <b>Run</b>.</li>
+          <li><b>Authentication → Providers → Email</b>: turn off <b>Allow new users to sign up</b>.</li>
+          <li><b>Authentication → Users → Add user</b> for each supervisor (email + password).</li>
+          <li><b>Project Settings → API</b>: copy the Project URL and the anon public key into the top of this file.</li>
+          <li>Upload the file to GitHub as <b>index.html</b>; Vercel will deploy it.</li>
+        </ol>`}
+        <button class="btn" data-action="copy-sql">Copy setup SQL</button>
+        ${LIVE?'':` <button class="btn danger" data-action="reset-demo">Reset demo data</button>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCrew(){
+  const {trainee:t, config} = S.crew;
+  const s = stats(t, config);
+  const skills = config.skills.filter(x=>x.active);
+  const list = skills.filter(sk=> S.crewFilter==='all' ? true : !skillPhaseDone(t,sk.id).every(Boolean));
+  const trs = config.trainings||[];
+  return `${crewTop()}
+  <div class="crew">
+    <div class="card crewhead">
+      <h1>${esc(t.name)}</h1>
+      <div class="meta"><span>${esc(t.position||'')}</span><span>Hired ${fmtDate(t.hire_date)}</span></div>
+      <div style="margin-top:8px">${weekBadge(s.cw)}</div>
+      <div class="crewscore">
+        <div class="bigscore"><div class="n">${s.score}</div><div class="l">Score</div></div>
+        <div style="flex:1">${phaseBars(s)}</div>
+      </div>
+      <div class="sidestats"><span>Attendance <b>${s.att==null?'—':s.att+'%'}</b></span></div>
+    </div>
+    ${trs.length?`<h2 style="font-size:22px;margin:4px 0 10px">My trainings</h2>
+    <div class="card crewlist" style="margin-bottom:16px">${trs.map(tr=>`<div class="it" style="cursor:pointer" data-action="open-training" data-id="${esc(tr.id)}"><span>📘 ${esc(tr.title)}</span>${quizStatus(t.data.quizzes[tr.id], tr)}</div>`).join('')}</div>`:''}
+    <div class="toolbar">
+      <h2 style="font-size:22px">My skills</h2><div class="spacer"></div>
+      <div class="seg">${[['all','All'],['todo','Still to do']].map(([k,l])=>`<button class="${S.crewFilter===k?'on':''}" data-action="crewfilter" data-v="${k}">${l}</button>`).join('')}</div>
+    </div>
+    <div class="card crewlist">${list.map(sk=>`<div class="it"><span>${esc(sk.name)}${bookBtns(config, sk.id)}</span>${pills(t, sk.id)}</div>`).join('') || '<div class="empty">All skills done in every phase. Nice work!</div>'}</div>
+    <div class="legend" style="grid-template-columns:1fr 1fr">${PHASES.map(p=>`<div style="background:var(--${p.key}-bg)"><b style="color:var(--${p.key})">${p.short} = ${p.label} · Wk ${p.weeks[0]}–${p.weeks[p.weeks.length-1]}</b>${esc(p.note)}</div>`).join('')}</div>
+  </div>`;
+}
+
+/* ---------------- trainings ---------------- */
+function crewTop(){
+  return `<div class="topbar"><div class="brand"><img class="crest" src="${LOGO}" alt="MC4 University crest"><div><b>MC4 University</b><small>My progress</small></div></div><div class="spacer"></div><button class="btn sm ghost-dark" data-action="logout">Sign out</button></div>`;
+}
+function bookBtns(cfg, sid){
+  return trainingsForSkill(cfg, sid).map(tr=>`<button class="bookbtn" title="Open training: ${esc(tr.title)}" data-action="open-training" data-id="${esc(tr.id)}">📘</button>`).join('');
+}
+function quizStatus(q, tr){
+  if(!tr.questions.length) return `<span class="status none">Slides only</span>`;
+  if(!q) return `<span class="status none">Not taken</span>`;
+  return q.passed ? `<span class="status pass">Passed · ${q.best}%</span>` : `<span class="status fail">Try again · ${q.best}%</span>`;
+}
+function skillChips(cfg, tr){
+  if(!tr.skills.length) return `<div class="chips"><span class="chip gen">General training</span></div>`;
+  return `<div class="chips">${tr.skills.map(id=>{const s=cfg.skills.find(x=>x.id===id); return s?`<span class="chip">${esc(s.name)}</span>`:'';}).join('')}</div>`;
+}
+function renderTrainings(){
+  const trs = S.config.trainings;
+  const act = S.trainees.filter(t=>t.active && currentWeek(t)<=WEEKS);
+  return `<div class="toolbar"><h2 style="font-size:26px">Trainings</h2><div class="spacer"></div><button class="btn primary" data-action="tr-new">+ New training</button></div>
+  <p class="note">Slides and quizzes crew can open on their phone. Link a training to skills and a 📘 appears next to those skills.</p>
+  ${trs.length?`<div class="trlist">${trs.map(tr=>{
+    const passed = act.filter(t=>(t.data.quizzes[tr.id]||{}).passed).length;
+    return `<div class="card trcard">
+      <h3>${esc(tr.title)}</h3>
+      ${skillChips(S.config, tr)}
+      <div class="sub">${tr.file?'📄 '+esc(tr.file.name):'<span style="color:var(--danger)">No slides yet</span>'+(tr.suggestedFile?' · upload <b>'+esc(tr.suggestedFile)+'</b>':'')}</div>
+      <div class="sub">${tr.questions.length} quiz question${tr.questions.length===1?'':'s'} · pass ${tr.passMark}%${tr.questions.length?` · <b style="color:var(--ink)">${passed}/${act.length}</b> in program passed`:''}</div>
+      <div style="display:flex;gap:8px;margin-top:4px"><button class="btn sm" data-action="open-training" data-id="${esc(tr.id)}">Open</button><button class="btn sm" data-action="tr-edit" data-id="${esc(tr.id)}">Edit</button></div>
+    </div>`;}).join('')}</div>`:`<div class="card empty">No trainings yet. Click <b>+ New training</b> to add your first one.</div>`}`;
+}
+function renderTrainingPage(tr, cfg, who){
+  const crew = who==='crew';
+  const q = crew ? S.crew.trainee.data.quizzes[tr.id] : null;
+  const hasQuiz = tr.questions.length>0;
+  return `<button class="back" data-action="${crew?'crew-home':'nav'}" data-v="trainings">← ${crew?'My progress':'All trainings'}</button>
+  <div class="card pad" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:start;flex-wrap:wrap">
+      <h1 style="font-size:30px">${esc(tr.title)}</h1>
+      ${crew ? quizStatus(q, tr) : `<span class="status none">Supervisor preview — quiz not recorded</span>`}
+    </div>
+    <div style="margin-top:8px">${skillChips(cfg, tr)}</div>
+    ${hasQuiz?`<div class="sub note" style="margin:8px 0 0">${tr.questions.length} question quiz · ${tr.passMark}% to pass · retake as many times as you need${q?` · ${q.attempts} attempt${q.attempts>1?'s':''} so far`:''}</div>`:''}
+  </div>
+  ${hasQuiz?`<div class="seg" style="margin-bottom:12px">
+    <button class="${S.trPane==='slides'?'on':''}" data-action="tr-pane" data-v="slides">1 · Slides</button>
+    <button class="${S.trPane==='quiz'?'on':''}" data-action="tr-pane" data-v="quiz">2 · Quiz</button></div>`:''}
+  ${S.trPane==='quiz' && hasQuiz ? renderQuiz(tr, crew) : `<div class="viewer" id="viewer"></div>
+    ${hasQuiz?`<div style="text-align:center;margin-top:14px"><button class="btn primary" data-action="tr-pane" data-v="quiz">Done reading — take the quiz</button></div>`:''}`}`;
+}
+function renderQuiz(tr, crew){
+  if(!S.quiz || S.quiz.trId!==tr.id) S.quiz = {trId:tr.id, answers:{}, result:null};
+  const Q = S.quiz, R = Q.result;
+  const head = R ? `<div class="card result">
+      <div class="n" style="color:${R.passed?'var(--ok)':'var(--danger)'}">${R.score}%</div>
+      <div style="font-weight:800;font-size:18px;margin-top:4px">${R.passed?'Passed!':'Not quite — you need '+tr.passMark+'% to pass'}</div>
+      <div class="note" style="margin:6px 0 12px">${R.correct} of ${tr.questions.length} correct${crew?'':' · preview, not recorded'}</div>
+      <button class="btn ${R.passed?'':'primary'}" data-action="quiz-retake">Retake quiz</button>
+      ${R.passed?'':` <button class="btn" data-action="tr-pane" data-v="slides">Review slides</button>`}
+    </div>` : '';
+  const qs = tr.questions.map((qq,qi)=>{
+    const chosen = Q.answers[qi];
+    return `<div class="card qcard"><div class="qt">${qi+1}. ${esc(qq.q)}</div>
+      ${qq.options.map((o,oi)=>{ if(!String(o||'').trim()) return '';
+        let cls=''; if(R && chosen===oi) cls = oi===qq.answer?'right':'wrong';
+        return `<label class="opt ${cls}"><input type="radio" name="q${qi}" ${chosen===oi?'checked':''} ${R?'disabled':''} data-change="quiz-ans" data-qi="${qi}" value="${oi}"> ${esc(o)}</label>`;}).join('')}
+    </div>`;
+  }).join('');
+  const all = tr.questions.every((_,i)=>Q.answers[i]!=null);
+  return head + qs + (R?'':`<div style="text-align:center;margin-top:6px"><button class="btn primary" id="quizSubmit" data-action="quiz-submit" ${all?'':'disabled style="opacity:.5"'}>Submit answers</button></div>`);
+}
+function renderTraineeQuizzes(t){
+  const trs = S.config.trainings;
+  if(!trs.length) return `<div class="card empty">No trainings set up yet. Add them on the Trainings page.</div>`;
+  return `<div class="card pad"><div class="raters">${trs.map(tr=>{
+    const q = t.data.quizzes[tr.id];
+    return `<div class="rater"><div><div class="n">${esc(tr.title)}</div><div class="note" style="margin:2px 0 0">${q?`Best ${q.best}% · last ${q.last}% · ${q.attempts} attempt${q.attempts>1?'s':''} · ${new Date(q.at).toLocaleDateString()}`:(tr.questions.length?'No attempts yet':'Slides only')}</div></div>${quizStatus(q, tr)}</div>`;
+  }).join('')}</div></div>`;
+}
+function renderTrainingEditor(){
+  const d = S.draft; if(!d) return renderTrainings();
+  const isNew = !S.config.trainings.some(t=>t.id===d.id);
+  return `<button class="back" data-action="nav" data-v="trainings">← All trainings</button>
+  <div class="settings">
+    <div class="card pad">
+      <h2>${isNew?'New training':'Edit training'}</h2>
+      <div class="field" style="margin-top:12px"><label>Title</label><input class="inp" data-draft="title" value="${esc(d.title)}" placeholder="e.g. Forklift Safety"></div>
+      <div class="field"><label>Slides (PDF)</label>
+        <div class="drop">${d.file?`📄 <b>${esc(d.file.name)}</b><br><span style="font-size:12px">${(d.file.size/1048576).toFixed(1)} MB</span><br>`:'No slides yet'+(d.suggestedFile?` — upload <b>${esc(d.suggestedFile)}</b>`:'')+'<br>'}
+          <label class="btn sm" style="margin-top:8px">${d.file?'Replace':'Choose PDF'}<input type="file" accept=".pdf,application/pdf,.ppt,.pptx" id="pdfInput" hidden></label>
+          ${d.file?` <button class="btn sm danger" data-action="tr-file-remove">Remove</button>`:''}
+          <div style="font-size:12px;margin-top:8px">PowerPoint? Save it as PDF first (File → Save As → PDF).</div>
+        </div></div>
+      <div class="field"><label>Linked skills <span style="text-transform:none;font-weight:500">(leave all unchecked for a general training)</span></label>
+        <div class="skillpick">${S.config.skills.filter(s=>s.active).map(s=>`<label><input type="checkbox" data-draft="skill" value="${s.id}" ${d.skills.includes(s.id)?'checked':''}> ${esc(s.name)}</label>`).join('')}</div></div>
+      <div class="field" style="max-width:160px"><label>Pass mark %</label><input class="inp" type="number" min="0" max="100" data-draft="pass" value="${d.passMark}"></div>
+      <div class="mfoot" style="justify-content:flex-start">
+        <button class="btn primary" data-action="tr-save">Save training</button>
+        <button class="btn" data-action="nav" data-v="trainings">Cancel</button>
+        ${isNew?'':`<button class="btn danger" style="margin-left:auto" data-action="tr-delete">Delete training</button>`}
+      </div>
+    </div>
+    <div class="card pad">
+      <h2>Quiz</h2>
+      <p class="note">Pick the correct answer with the green circle. Blank answer boxes are hidden. No questions = slides only.</p>
+      ${d.questions.map((q,qi)=>`<div class="qed">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>Question ${qi+1}</b><button class="iconbtn" title="Remove question" data-action="q-del" data-qi="${qi}">✕</button></div>
+        <textarea class="inp" rows="2" data-draft="q" data-qi="${qi}" placeholder="Question">${esc(q.q)}</textarea>
+        ${[0,1,2,3].map(oi=>`<div class="orow"><input type="radio" name="ans${qi}" title="Correct answer" data-draft="ans" data-qi="${qi}" value="${oi}" ${q.answer===oi?'checked':''}><input class="inp" data-draft="opt" data-qi="${qi}" data-oi="${oi}" value="${esc(q.options[oi]||'')}" placeholder="Answer ${String.fromCharCode(65+oi)}"></div>`).join('')}
+      </div>`).join('')}
+      <button class="btn" data-action="q-add">+ Add question</button>
+    </div>
+  </div>`;
+}
+
+let pdfjsP = null, pdfTok = 0;
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(!pdfjsP) pdfjsP = new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; res(window.pdfjsLib); };
+    s.onerror=()=>{ pdfjsP=null; rej(new Error('Slide viewer failed to load')); };
+    document.head.appendChild(s);
+  });
+  return pdfjsP;
+}
+function dataUrlToBytes(u){ const b=atob(u.split(',')[1]); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
+async function showPdf(file){
+  const tok = ++pdfTok;
+  const box = () => tok===pdfTok ? $('#viewer') : null;
+  if(!box()) return;
+  if(!file || !file.url){ box().innerHTML='<div class="msg">No slides uploaded yet.</div>'; return; }
+  box().innerHTML='<div class="msg">Loading slides…</div>';
+  try{
+    const lib = await loadPdfJs();
+    const doc = await lib.getDocument(file.url.startsWith('data:') ? {data:dataUrlToBytes(file.url)} : {url:file.url}).promise;
+    if(!box()) return;
+    const el = box(); el.innerHTML='';
+    const target = Math.min(el.clientWidth-24, 1000), dpr = window.devicePixelRatio||1;
+    for(let i=1;i<=doc.numPages;i++){
+      const page = await doc.getPage(i); if(!box()) return;
+      const base = page.getViewport({scale:1}), css = target/base.width;
+      const vp = page.getViewport({scale:css*dpr});
+      const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height; c.style.width=Math.round(base.width*css)+'px';
+      el.appendChild(c);
+      await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise;
+    }
+  }catch(e){
+    const el = box(); if(el) el.innerHTML = `<div class="msg">Couldn't show the slides here.<br><br><a href="${esc(file.url)}" target="_blank" rel="noopener" download="${esc(file.name||'training.pdf')}">Open the PDF</a></div>`;
+  }
+}
+function newDraft(){ return {id:'tr_'+uid(), title:'', skills:[], passMark:DEFAULT_PASS, file:null, questions:[]}; }
+function blankQ(){ return {q:'', options:['','','',''], answer:0}; }
+async function handlePdf(file){
+  if(!file) return;
+  if(!/\.pdf$/i.test(file.name) && file.type!=='application/pdf'){ toast('That\'s a PowerPoint file. Save it as PDF first (File → Save As → PDF).', true); return; }
+  toast('Uploading…');
+  try{ S.draft.file = await Store.uploadPdf(file, S.draft.id); render(); toast('Slides uploaded — click Save training'); }
+  catch(e){ toast('Upload failed: '+(e.message||e), true); }
+}
+function cleanDraft(d){
+  const out = clone(d);
+  out.title = out.title.trim();
+  out.passMark = Math.max(0, Math.min(100, +out.passMark||0));
+  out.questions = out.questions.filter(q=>q.q.trim() && q.options.filter(o=>String(o||'').trim()).length>=2);
+  const bad = out.questions.findIndex(q=>!String(q.options[q.answer]||'').trim());
+  return {out, bad};
+}
+
+/* ---------------- modal ---------------- */
+function openTraineeModal(t){
+  const isNew = !t;
+  t = t || {name:'', hire_date:isoToday(), position:'Yard', active:true, pin:genPin()};
+  $('#modal-root').innerHTML = `<div class="overlay" data-action="close-modal-bg"><form class="card modal" id="tform">
+    <h2>${isNew?'Add trainee':'Edit details'}</h2>
+    <div class="field"><label>Full name</label><input class="inp" id="f_name" required value="${esc(t.name)}"></div>
+    <div class="mrow">
+      <div class="field"><label>Hire date</label><input class="inp" type="date" id="f_hire" required value="${esc(t.hire_date||'')}"></div>
+      <div class="field"><label>Position</label><input class="inp" id="f_pos" value="${esc(t.position||'')}"></div>
+    </div>
+    <div class="mrow">
+      <div class="field"><label>Crew PIN (4–6 digits)</label><input class="inp" id="f_pin" inputmode="numeric" pattern="[0-9]{4,6}" required value="${esc(t.pin||'')}"></div>
+      <div class="field"><label>Status</label><select class="inp" id="f_active"><option value="1" ${t.active?'selected':''}>Active</option><option value="0" ${t.active?'':'selected'}>Inactive</option></select></div>
+    </div>
+    <div class="mfoot">
+      ${isNew?'':`<button type="button" class="btn danger left" data-action="delete">Delete</button>`}
+      <button type="button" class="btn" data-action="close-modal">Cancel</button>
+      <button type="submit" class="btn primary">${isNew?'Add':'Save'}</button>
+    </div>
+  </form></div>`;
+  $('#f_name').focus();
+  $('#tform').onsubmit = async e=>{
+    e.preventDefault();
+    const vals = {name:$('#f_name').value.trim(), hire_date:$('#f_hire').value, position:$('#f_pos').value.trim(), pin:$('#f_pin').value.trim(), active:$('#f_active').value==='1'};
+    if(!vals.name) return;
+    try{
+      if(isNew){
+        const saved = await Store.saveTrainee(normTrainee(vals));
+        S.trainees.push(saved); S.currentId=saved.id; S.view='trainee'; S.tab='skills';
+        toast('Trainee added');
+      } else {
+        const saved = await Store.patchTrainee(t.id, x=>Object.assign(x, vals));
+        const i=S.trainees.findIndex(x=>x.id===t.id); S.trainees[i]=saved; toast('Saved');
+      }
+      closeModal(); render();
+    }catch(err){ toast(err.message||String(err), true); }
+  };
+}
+function closeModal(){ $('#modal-root').innerHTML=''; }
+function genPin(){
+  const used = new Set(S.trainees.map(t=>t.pin));
+  let p; do{ p = String(1000+Math.floor(Math.random()*9000)); }while(used.has(p)); return p;
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click', async e=>{
+  const el = e.target.closest('[data-action]'); if(!el) return;
+  const a = el.dataset.action, d = el.dataset;
+  if(a==='close-modal-bg'){ if(e.target===el) closeModal(); return; }
+  switch(a){
+    case 'logintab': S.loginTab=d.v; S.pin=''; render(); break;
+    case 'key': return pinKey(d.k);
+    case 'logout': await Store.signOut(); S.role=null; S.user=null; S.crew=null; S.pin=''; S.view='list'; S.crewView='home'; S.quiz=null; S.draft=null; render(); break;
+    case 'nav': S.view=d.v; render(); window.scrollTo(0,0); break;
+    case 'filter': S.filter=d.v; render(); break;
+    case 'open': S.currentId=d.id; S.view='trainee'; S.tab='skills'; render(); window.scrollTo(0,0); break;
+    case 'tab': S.tab=d.v; render(); break;
+    case 'add': openTraineeModal(null); break;
+    case 'edit': openTraineeModal(cur()); break;
+    case 'close-modal': closeModal(); break;
+    case 'print': window.print(); break;
+    case 'crewfilter': S.crewFilter=d.v; render(); break;
+    case 'open-training':
+      e.stopPropagation();
+      S.trainingId=d.id; S.trPane='slides'; S.quiz=null;
+      if(S.role==='crew') S.crewView='training'; else S.view='training';
+      render(); window.scrollTo(0,0); break;
+    case 'crew-home': S.crewView='home'; S.quiz=null; render(); window.scrollTo(0,0); break;
+    case 'tr-pane': S.trPane=d.v; render(); window.scrollTo(0,0); break;
+    case 'quiz-retake': S.quiz=null; render(); window.scrollTo(0,0); break;
+    case 'quiz-submit': {
+      const cfg = S.role==='crew' ? S.crew.config : S.config;
+      const tr = trainingById(cfg, S.trainingId); if(!tr || !S.quiz) return;
+      const correct = tr.questions.filter((q,i)=>S.quiz.answers[i]===q.answer).length;
+      const score = Math.round(correct/tr.questions.length*100), passed = score>=tr.passMark;
+      if(S.role==='crew'){
+        el.disabled = true;
+        try{ const q = await Store.submitQuiz(S.crew.pin, tr.id, score, passed); S.crew.trainee.data.quizzes[tr.id]=q; }
+        catch(err){ el.disabled=false; return toast('Could not save your quiz: '+(err.message||err), true); }
+      }
+      S.quiz.result = {score, passed, correct}; render(); window.scrollTo(0,0); break;
+    }
+    case 'tr-new': S.draft=newDraft(); S.draft.questions.push(blankQ()); S.view='training-edit'; render(); window.scrollTo(0,0); break;
+    case 'tr-edit': S.draft=clone(trainingById(S.config, d.id)); while(S.draft.questions.length===0) S.draft.questions.push(blankQ()); S.draft.questions.forEach(q=>{ while(q.options.length<4) q.options.push(''); }); S.view='training-edit'; render(); window.scrollTo(0,0); break;
+    case 'q-add': S.draft.questions.push(blankQ()); render(); break;
+    case 'q-del': S.draft.questions.splice(+d.qi,1); render(); break;
+    case 'tr-file-remove': S.draft.file=null; render(); break;
+    case 'tr-save': {
+      const {out, bad} = cleanDraft(S.draft);
+      if(!out.title) return toast('Give the training a title', true);
+      if(bad>-1) return toast(`Question ${bad+1}: pick which answer is correct`, true);
+      const c = clone(S.config), i = c.trainings.findIndex(t=>t.id===out.id);
+      const old = i>-1 ? c.trainings[i].file : null;
+      if(i>-1) c.trainings[i]=out; else c.trainings.push(out);
+      await saveConfig(c, 'Training saved');
+      if(old && old.path && (!out.file || out.file.path!==old.path)) Store.removePdf(old).catch(()=>{});
+      S.draft=null; S.view='trainings'; render(); break;
+    }
+    case 'tr-delete': {
+      const tr = trainingById(S.config, S.draft.id);
+      if(!confirmSafe(`Delete the training "${tr.title}"? Quiz results already recorded stay in each person's history.`)) return;
+      const c = clone(S.config); c.trainings = c.trainings.filter(t=>t.id!==tr.id);
+      await saveConfig(c, 'Training deleted'); if(tr.file) Store.removePdf(tr.file).catch(()=>{});
+      S.draft=null; S.view='trainings'; render(); break;
+    }
+    case 'delete': {
+      const t = cur(); if(!t) return;
+      if(!confirmSafe(`Permanently delete ${t.name} and all their records? (To keep their history, set Status to Inactive instead.)`)) return;
+      try{ await Store.deleteTrainee(t.id); S.trainees=S.trainees.filter(x=>x.id!==t.id); closeModal(); S.view='list'; render(); toast('Deleted'); }
+      catch(err){ toast(err.message||String(err), true); }
+      break;
+    }
+    case 'mark': {
+      const t = cur(), key = d.s+'|'+d.w;
+      const turnOn = !t.data.marks[key];
+      const by = S.user && S.user.email ? S.user.email.split('@')[0] : 'supervisor';
+      const at = new Date().toISOString();
+      mutate(t.id, x=>{ if(turnOn) x.data.marks[key]={by,at}; else delete x.data.marks[key]; });
+      break;
+    }
+    case 'rate': {
+      const t = cur(); const next = t.data.ratings[d.r]===d.v ? null : d.v;
+      mutate(t.id, x=>{ if(next) x.data.ratings[d.r]=next; else delete x.data.ratings[d.r]; });
+      break;
+    }
+    case 'skill-move': {
+      const c = clone(S.config), i=+d.i, j=i+(+d.d);
+      if(j<0||j>=c.skills.length) return;
+      [c.skills[i],c.skills[j]]=[c.skills[j],c.skills[i]]; saveConfig(c); break;
+    }
+    case 'skill-toggle': { const c=clone(S.config); c.skills[+d.i].active=!c.skills[+d.i].active; saveConfig(c, c.skills[+d.i].active?'Skill shown':'Skill hidden'); break; }
+    case 'skill-add': { const v=$('#newSkill').value.trim(); if(!v) return; const c=clone(S.config); c.skills.push({id:uid(),name:v.toUpperCase(),active:true}); saveConfig(c,'Skill added'); break; }
+    case 'rater-add': { const v=$('#newRater').value.trim(); if(!v) return; const c=clone(S.config); if(c.raters.includes(v.toUpperCase())) return toast('Already on the list', true); c.raters.push(v.toUpperCase()); saveConfig(c,'Team member added'); break; }
+    case 'rater-del': { const c=clone(S.config); const n=c.raters[+d.i]; if(!confirmSafe(`Remove ${n} from the team list? Existing ratings they gave are kept in history.`)) return; c.raters.splice(+d.i,1); saveConfig(c,'Removed'); break; }
+    case 'copy-sql': copyText(SETUP_SQL); break;
+    case 'reset-demo': if(!confirmSafe('Reset all demo data back to the samples?')) return; try{localStorage.removeItem(DEMO_KEY);}catch(_){} demoMem=null; await reload(); toast('Demo data reset'); break;
+  }
+});
+function confirmSafe(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
+function copyText(txt){
+  const done=()=>toast('Setup SQL copied — paste it into the Supabase SQL Editor');
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt,done)); }
+  else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ toast('Copy failed — select the text manually', true); }
+  ta.remove();
+}
+
+document.addEventListener('change', e=>{
+  if(e.target.id==='pdfInput'){ handlePdf(e.target.files[0]); return; }
+  const dr = e.target.dataset && e.target.dataset.draft;
+  if(dr==='skill'){ const v=e.target.value; S.draft.skills = e.target.checked ? [...new Set([...S.draft.skills, v])] : S.draft.skills.filter(x=>x!==v); return; }
+  if(dr==='ans'){ S.draft.questions[+e.target.dataset.qi].answer = +e.target.value; return; }
+  const el = e.target.closest('[data-change]'); if(!el) return;
+  if(el.dataset.change==='quiz-ans'){
+    if(!S.quiz) return; S.quiz.answers[+el.dataset.qi] = +el.value;
+    const cfg = S.role==='crew' ? S.crew.config : S.config, tr = trainingById(cfg, S.trainingId);
+    const btn = $('#quizSubmit'); if(btn && tr && tr.questions.every((_,i)=>S.quiz.answers[i]!=null)){ btn.disabled=false; btn.style.opacity=''; }
+    return;
+  }
+  const k = el.dataset.change, d = el.dataset;
+  if(k.startsWith('att-')||k==='stab'){
+    const t = cur(); if(!t) return; const w=d.w, val=el.value;
+    mutate(t.id, x=>{
+      if(k==='stab'){ if(val.trim()) x.data.stab[w]=val; else delete x.data.stab[w]; }
+      else { const a = Object.assign({missed:0,note:''}, x.data.attendance[w]); if(k==='att-missed') a.missed=+val; else a.note=val; x.data.attendance[w]=a; }
+    });
+    toast('Saved');
+    return;
+  }
+  if(k==='skill-name'){ const c=clone(S.config); const v=el.value.trim(); if(!v) return render(); c.skills[+d.i].name=v.toUpperCase(); saveConfig(c,'Skill renamed'); }
+  if(k==='weight'){ const c=clone(S.config); c.weights[d.k]=Math.max(0,Math.min(100,+el.value||0)); saveConfig(c,'Weights saved'); }
+});
+document.addEventListener('input', e=>{
+  if(e.target.id==='search'){ S.search=e.target.value; renderRows(); }
+  const dr = e.target.dataset && e.target.dataset.draft; if(!dr || !S.draft) return;
+  const qi = +e.target.dataset.qi;
+  if(dr==='title') S.draft.title = e.target.value;
+  else if(dr==='pass') S.draft.passMark = e.target.value;
+  else if(dr==='q') S.draft.questions[qi].q = e.target.value;
+  else if(dr==='opt') S.draft.questions[qi].options[+e.target.dataset.oi] = e.target.value;
+});
+document.addEventListener('submit', async e=>{
+  if(e.target.id!=='staffForm') return;
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    S.user = await Store.signIn($('#em').value.trim(), $('#pw').value);
+    S.role='staff'; S.view='list';
+    await reload();
+  }catch(err){ $('#lerr').textContent = err.message || 'Sign-in failed'; btn.disabled=false; btn.textContent='Sign in'; }
+});
+document.addEventListener('keydown', e=>{
+  if(S.role || S.loginTab!=='crew') { if(e.key==='Escape') closeModal(); return; }
+  if(/^[0-9]$/.test(e.key)) pinKey(e.key);
+  else if(e.key==='Backspace') pinKey('clr');
+  else if(e.key==='Enter') pinKey('go');
+});
+async function pinKey(k){
+  if(k==='clr'){ S.pin=S.pin.slice(0,-1); render(); return; }
+  if(k==='go'){
+    if(S.pin.length<4){ $('#lerr').textContent='PIN is at least 4 digits'; return; }
+    try{
+      const r = await Store.pinLogin(S.pin);
+      if(!r){ S.pin=''; render(); $('#lerr').textContent='PIN not found. Check with your supervisor.'; return; }
+      S.crew=r; S.crew.pin=S.pin; S.role='crew'; S.pin=''; S.crewFilter='all'; S.crewView='home'; render();
+    }catch(err){ S.pin=''; render(); $('#lerr').textContent=err.message||'Sign-in failed'; }
+    return;
+  }
+  if(S.pin.length<6){ S.pin+=k; render(); }
+}
+
+/* ---------------- start ---------------- */
+(function favicon(){ const l=document.createElement('link'); l.rel='icon'; l.type='image/png'; l.href=LOGO; document.head.appendChild(l); })();
+(async function start(){
+  try{
+    const user = await Store.init();
+    if(user){ S.user=user; S.role='staff'; await reload(); return; }
+  }catch(e){ toast(e.message||String(e), true); }
+  render();
+})();
+</script>
+</body>
+</html>
