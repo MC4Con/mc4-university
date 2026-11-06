@@ -431,7 +431,7 @@ function normConfig(c){
 function normTrainee(t){
   t = clone(t||{});
   t.data = t.data && typeof t.data==='object' ? t.data : {};
-  for(const k of ['marks','attendance','stab','ratings','quizzes']) if(!t.data[k] || typeof t.data[k]!=='object') t.data[k]={};
+  for(const k of ['marks','attendance','stab','stabkot','ratings','quizzes']) if(!t.data[k] || typeof t.data[k]!=='object') t.data[k]={};
   if(t.hire_date) t.hire_date=String(t.hire_date).slice(0,10);
   if(t.active===undefined) t.active=true;
   return t;
@@ -452,9 +452,11 @@ function stats(t, config){
   let missed = 0;
   for(let w=1; w<=elapsed; w++) missed += +((t.data.attendance[w]||{}).missed||0);
   const att = elapsed ? Math.round((elapsed*5-missed)/(elapsed*5)*100) : null;
+  const sk = {STAB:0, KOT:0};
+  Object.values(t.data.stabkot).forEach(arr=>(Array.isArray(arr)?arr:[]).forEach(x=>{ sk[x.type==='KOT'?'KOT':'STAB']++; }));
   const rc = {GOOD:0,OK:0,POOR:0};
   Object.values(t.data.ratings).forEach(v=>{ if(rc[v]!=null) rc[v]++; });
-  return {phases, score, cw, att, missed, rc, n: skills.length};
+  return {phases, score, cw, att, missed, rc, sk, n: skills.length};
 }
 function skillPhaseDone(t, sid){ return PHASES.map(p=>p.weeks.some(w=>t.data.marks[sid+'|'+w])); }
 function pills(t, sid){
@@ -774,6 +776,7 @@ function renderTrainee(){
         </div>
         <div class="sidestats">
           <span>Attendance <b>${s.att==null?'—':s.att+'%'}</b>${s.missed?` (${s.missed} day${s.missed>1?'s':''} missed)`:''}</span>
+          <span>STAB / KOT: <b>${s.sk.STAB}</b> STAB · <b>${s.sk.KOT}</b> KOT</span>
           <span>Team: <b style="color:var(--ok)">${s.rc.GOOD} good</b> · <b style="color:var(--guidance)">${s.rc.OK} ok</b> · <b style="color:var(--danger)">${s.rc.POOR} poor</b></span>
         </div>
       </div>
@@ -811,12 +814,22 @@ function renderAttendance(t, s){
       <div class="field" style="margin:0"><label>Which days / notes</label><input class="inp" data-change="att-note" data-w="${w}" value="${esc(a.note||'')}" placeholder="e.g. Mon, Tue — sick"></div>
     </div>`;}).join('')}</div>`;
 }
+function stabWeek(t, w){ const a=t.data.stabkot[w]; return Array.isArray(a)?a:[]; }
 function renderStab(t, s){
-  return `<div class="card pad"><p class="note">Weekly STAB / KOT notes. These are kept for the record and don't count toward the score.</p>
-    ${Array.from({length:WEEKS},(_,i)=>i+1).map(w=>`
-      <div class="stabrow"><div class="w" style="${w===s.cw?'color:var(--accent)':''}">Week ${w}<small>${phaseOfWeek(w).label}</small></div>
-      <textarea class="inp" rows="2" data-change="stab" data-w="${w}" placeholder="Notes">${esc(t.data.stab[w]||'')}</textarea></div>`).join('')}
-  </div>`;
+  const weeks = Array.from({length:WEEKS},(_,i)=>i+1);
+  return `<p class="note">How many STAB / KOT instances happened each week, with a note for each one. These are kept for the record and don't count toward the score.</p>
+  <div class="weeks">${weeks.map(w=>{
+    const arr = stabWeek(t, w), old = t.data.stab[w];
+    return `<div class="wkcard ${w===s.cw?'cur':''}"><h4>Week ${w} <span style="font-size:12px;color:var(--${phaseOfWeek(w).key})">${phaseOfWeek(w).label}</span></h4>
+      <div class="field"><label>Instances this week</label>
+        <select class="inp" data-change="sk-count" data-w="${w}">${Array.from({length:11},(_,n)=>`<option value="${n}" ${arr.length===n?'selected':''}>${n}</option>`).join('')}</select></div>
+      ${arr.map((x,i)=>`<div class="field" style="margin-bottom:8px"><label>#${i+1}</label>
+        <div style="display:flex;gap:6px;margin-bottom:4px">
+          <select class="inp" style="width:auto" data-change="sk-type" data-w="${w}" data-i="${i}">${['STAB','KOT'].map(o=>`<option ${x.type===o?'selected':''}>${o}</option>`).join('')}</select>
+        </div>
+        <textarea class="inp" rows="2" data-change="sk-note" data-w="${w}" data-i="${i}" placeholder="What happened?">${esc(x.note||'')}</textarea></div>`).join('')}
+      ${old?`<div class="note" style="margin:6px 0 0"><b>Earlier note:</b> ${esc(old)}</div>`:''}
+    </div>`;}).join('')}</div>`;
 }
 function renderTeam(t){
   if(!S.config.raters.length) return `<div class="card empty">No team members set up. Add them in Settings.</div>`;
@@ -1241,6 +1254,20 @@ document.addEventListener('change', e=>{
     return;
   }
   const k = el.dataset.change, d = el.dataset;
+  if(k.startsWith('sk-')){
+    const t = cur(); if(!t) return; const w=d.w;
+    let arr = clone(stabWeek(t, w));
+    if(k==='sk-count'){
+      const n = +el.value;
+      const losing = arr.slice(n).filter(x=>(x.note||'').trim()).length;
+      if(losing && !confirmSafe(`This removes ${losing} note${losing>1?'s':''} for week ${w}. Continue?`)){ render(); return; }
+      arr = arr.slice(0,n); while(arr.length<n) arr.push({type:'STAB', note:''});
+    } else if(k==='sk-type'){ arr[+d.i].type = el.value; }
+    else { arr[+d.i].note = el.value; }
+    mutate(t.id, x=>{ if(arr.length) x.data.stabkot[w]=clone(arr); else delete x.data.stabkot[w]; });
+    toast('Saved');
+    return;
+  }
   if(k.startsWith('att-')||k==='stab'){
     const t = cur(); if(!t) return; const w=d.w, val=el.value;
     mutate(t.id, x=>{
