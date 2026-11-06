@@ -387,6 +387,8 @@ insert into storage.buckets (id, name, public) values ('mc4u-trainings','mc4u-tr
   on conflict (id) do nothing;
 drop policy if exists "mc4u staff upload" on storage.objects;
 create policy "mc4u staff upload" on storage.objects for insert to authenticated with check (bucket_id = 'mc4u-trainings');
+drop policy if exists "mc4u staff read" on storage.objects;
+create policy "mc4u staff read" on storage.objects for select to authenticated using (bucket_id = 'mc4u-trainings');
 drop policy if exists "mc4u staff update" on storage.objects;
 create policy "mc4u staff update" on storage.objects for update to authenticated using (bucket_id = 'mc4u-trainings');
 drop policy if exists "mc4u staff delete" on storage.objects;
@@ -594,7 +596,7 @@ const S = {
   role:null, user:null, config:normConfig(null), trainees:[],
   view:'list', currentId:null, tab:'skills', filter:'active', search:'',
   loginTab:'staff', pin:'', crew:null, crewFilter:'all',
-  trainingId:null, trPane:'slides', quiz:null, draft:null, crewView:'home'
+  trainingId:null, trPane:'slides', quiz:null, draft:null, crewView:'home', uploading:false
 };
 const trainingById = (cfg, id) => (cfg.trainings||[]).find(t=>t.id===id);
 const trainingsForSkill = (cfg, sid) => (cfg.trainings||[]).filter(t=>t.skills.includes(sid));
@@ -981,16 +983,16 @@ function renderTrainingEditor(){
       <h2>${isNew?'New training':'Edit training'}</h2>
       <div class="field" style="margin-top:12px"><label>Title</label><input class="inp" data-draft="title" value="${esc(d.title)}" placeholder="e.g. Forklift Safety"></div>
       <div class="field"><label>Slides (PDF)</label>
-        <div class="drop">${d.file?`📄 <b>${esc(d.file.name)}</b><br><span style="font-size:12px">${(d.file.size/1048576).toFixed(1)} MB</span><br>`:'No slides yet'+(d.suggestedFile?` — upload <b>${esc(d.suggestedFile)}</b>`:'')+'<br>'}
+        <div class="drop">${S.uploading?`<b style="color:var(--accent)">⏳ Uploading slides…</b><br><span style="font-size:12px">Large files can take a minute. Keep this page open.</span>`:`${d.file?`📄 <b>${esc(d.file.name)}</b><br><span style="font-size:12px">${(d.file.size/1048576).toFixed(1)} MB</span><br>`:'No slides yet'+(d.suggestedFile?` — upload <b>${esc(d.suggestedFile)}</b>`:'')+'<br>'}
           <label class="btn sm" style="margin-top:8px">${d.file?'Replace':'Choose PDF'}<input type="file" accept=".pdf,application/pdf,.ppt,.pptx" id="pdfInput" hidden></label>
           ${d.file?` <button class="btn sm danger" data-action="tr-file-remove">Remove</button>`:''}
-          <div style="font-size:12px;margin-top:8px">PowerPoint? Save it as PDF first (File → Save As → PDF).</div>
+          <div style="font-size:12px;margin-top:8px">PowerPoint? Save it as PDF first (File → Save As → PDF).</div>`}
         </div></div>
       <div class="field"><label>Linked skills <span style="text-transform:none;font-weight:500">(leave all unchecked for a general training)</span></label>
         <div class="skillpick">${S.config.skills.filter(s=>s.active).map(s=>`<label><input type="checkbox" data-draft="skill" value="${s.id}" ${d.skills.includes(s.id)?'checked':''}> ${esc(s.name)}</label>`).join('')}</div></div>
       <div class="field" style="max-width:160px"><label>Pass mark %</label><input class="inp" type="number" min="0" max="100" data-draft="pass" value="${d.passMark}"></div>
       <div class="mfoot" style="justify-content:flex-start">
-        <button class="btn primary" data-action="tr-save">Save training</button>
+        <button class="btn primary" data-action="tr-save" ${S.uploading?'disabled style="opacity:.5"':''}>${S.uploading?'Wait — uploading…':'Save training'}</button>
         <button class="btn" data-action="nav" data-v="trainings">Cancel</button>
         ${isNew?'':`<button class="btn danger" style="margin-left:auto" data-action="tr-delete">Delete training</button>`}
       </div>
@@ -1048,11 +1050,15 @@ async function showPdf(file){
 function newDraft(){ return {id:'tr_'+uid(), title:'', skills:[], passMark:DEFAULT_PASS, file:null, questions:[]}; }
 function blankQ(){ return {q:'', options:['','','',''], answer:0}; }
 async function handlePdf(file){
-  if(!file) return;
+  if(!file || S.uploading) return;
   if(!/\.pdf$/i.test(file.name) && file.type!=='application/pdf'){ toast('That\'s a PowerPoint file. Save it as PDF first (File → Save As → PDF).', true); return; }
-  toast('Uploading…');
-  try{ S.draft.file = await Store.uploadPdf(file, S.draft.id); render(); toast('Slides uploaded — click Save training'); }
-  catch(e){ toast('Upload failed: '+(e.message||e), true); }
+  const id = S.draft.id;
+  S.uploading = true; render();
+  try{
+    const f = await Store.uploadPdf(file, id);
+    if(S.draft && S.draft.id===id){ S.draft.file = f; toast('Slides uploaded — now click Save training'); }
+  }catch(e){ toast('Upload failed: '+(e.message||e), true); }
+  finally{ S.uploading = false; render(); }
 }
 function cleanDraft(d){
   const out = clone(d);
@@ -1117,7 +1123,7 @@ document.addEventListener('click', async e=>{
     case 'logintab': S.loginTab=d.v; S.pin=''; render(); break;
     case 'key': return pinKey(d.k);
     case 'logout': await Store.signOut(); S.role=null; S.user=null; S.crew=null; S.pin=''; S.view='list'; S.crewView='home'; S.quiz=null; S.draft=null; render(); break;
-    case 'nav': S.view=d.v; render(); window.scrollTo(0,0); break;
+    case 'nav': if(S.uploading && !confirmSafe('Slides are still uploading. Leave anyway? The upload will be lost.')) return; S.view=d.v; render(); window.scrollTo(0,0); break;
     case 'filter': S.filter=d.v; render(); break;
     case 'open': S.currentId=d.id; S.view='trainee'; S.tab='skills'; render(); window.scrollTo(0,0); break;
     case 'tab': S.tab=d.v; render(); break;
@@ -1152,6 +1158,7 @@ document.addEventListener('click', async e=>{
     case 'q-del': S.draft.questions.splice(+d.qi,1); render(); break;
     case 'tr-file-remove': S.draft.file=null; render(); break;
     case 'tr-save': {
+      if(S.uploading) return toast('Wait for the slides to finish uploading', true);
       const {out, bad} = cleanDraft(S.draft);
       if(!out.title) return toast('Give the training a title', true);
       if(bad>-1) return toast(`Question ${bad+1}: pick which answer is correct`, true);
