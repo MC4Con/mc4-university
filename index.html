@@ -525,6 +525,10 @@ const Store = {
     const d = demoLoad();
     return {config: normConfig(d.config), trainees: d.trainees.map(normTrainee)};
   },
+  async loadConfig(){
+    if(LIVE){ const c=await sb.from('mc4u_config').select('data').eq('id',1).maybeSingle(); if(c.error) throw c.error; return normConfig(c.data && c.data.data); }
+    demoMem = null; return normConfig(demoLoad().config);
+  },
   async saveConfig(config){
     if(LIVE){ const {error}=await sb.from('mc4u_config').upsert({id:1, data:config, updated_at:new Date().toISOString()}); if(error) throw error; return; }
     const d = demoLoad(); d.config = clone(config); demoSave(d);
@@ -610,10 +614,16 @@ async function mutate(id, fn){
     const i = S.trainees.findIndex(x=>x.id===id); if(i>-1) S.trainees[i]=saved;
   }catch(e){ toast('Could not save: '+(e.message||e), true); await reload(); }
 }
-async function saveConfig(next, msg){
-  S.config = normConfig(next); render();
-  try{ await Store.saveConfig(S.config); if(msg) toast(msg); }
-  catch(e){ toast('Could not save settings: '+(e.message||e), true); await reload(); }
+// Apply one change to the LATEST saved settings (never overwrite with an old copy)
+async function patchConfig(fn, msg){
+  fn(S.config); render();
+  try{
+    const fresh = await Store.loadConfig();
+    fn(fresh);
+    await Store.saveConfig(fresh);
+    S.config = normConfig(fresh); render();
+    if(msg) toast(msg);
+  }catch(e){ toast('Could not save settings: '+(e.message||e), true); await reload(); }
 }
 async function reload(){
   try{ const d=await Store.loadAll(); S.config=d.config; S.trainees=d.trainees; }
@@ -827,11 +837,11 @@ function renderSettings(){
       <div class="skill-ed">${c.skills.map((s,i)=>`
         <div class="r ${s.active?'':'off'}">
           <span class="num">${i+1}</span>
-          <input class="inp" data-change="skill-name" data-i="${i}" value="${esc(s.name)}">
+          <input class="inp" data-change="skill-name" data-id="${s.id}" value="${esc(s.name)}">
           <span style="display:flex;gap:4px">
-            <button class="iconbtn" title="Move up" data-action="skill-move" data-i="${i}" data-d="-1">↑</button>
-            <button class="iconbtn" title="Move down" data-action="skill-move" data-i="${i}" data-d="1">↓</button>
-            <button class="iconbtn" title="${s.active?'Hide':'Show'}" data-action="skill-toggle" data-i="${i}">${s.active?'👁':'⊘'}</button>
+            <button class="iconbtn" title="Move up" data-action="skill-move" data-id="${s.id}" data-d="-1">↑</button>
+            <button class="iconbtn" title="Move down" data-action="skill-move" data-id="${s.id}" data-d="1">↓</button>
+            <button class="iconbtn" title="${s.active?'Hide':'Show'}" data-action="skill-toggle" data-id="${s.id}">${s.active?'👁':'⊘'}</button>
           </span>
         </div>`).join('')}</div>
       <div class="addrow"><input class="inp" id="newSkill" placeholder="New skill name"><button class="btn" data-action="skill-add">Add skill</button></div>
@@ -1162,18 +1172,15 @@ document.addEventListener('click', async e=>{
       const {out, bad} = cleanDraft(S.draft);
       if(!out.title) return toast('Give the training a title', true);
       if(bad>-1) return toast(`Question ${bad+1}: pick which answer is correct`, true);
-      const c = clone(S.config), i = c.trainings.findIndex(t=>t.id===out.id);
-      const old = i>-1 ? c.trainings[i].file : null;
-      if(i>-1) c.trainings[i]=out; else c.trainings.push(out);
-      await saveConfig(c, 'Training saved');
+      const prev = trainingById(S.config, out.id), old = prev ? prev.file : null;
+      await patchConfig(c=>{ const i=c.trainings.findIndex(t=>t.id===out.id); if(i>-1) c.trainings[i]=clone(out); else c.trainings.push(clone(out)); }, 'Training saved');
       if(old && old.path && (!out.file || out.file.path!==old.path)) Store.removePdf(old).catch(()=>{});
       S.draft=null; S.view='trainings'; render(); break;
     }
     case 'tr-delete': {
       const tr = trainingById(S.config, S.draft.id);
       if(!confirmSafe(`Delete the training "${tr.title}"? Quiz results already recorded stay in each person's history.`)) return;
-      const c = clone(S.config); c.trainings = c.trainings.filter(t=>t.id!==tr.id);
-      await saveConfig(c, 'Training deleted'); if(tr.file) Store.removePdf(tr.file).catch(()=>{});
+      await patchConfig(c=>{ c.trainings = c.trainings.filter(t=>t.id!==tr.id); }, 'Training deleted'); if(tr.file) Store.removePdf(tr.file).catch(()=>{});
       S.draft=null; S.view='trainings'; render(); break;
     }
     case 'delete': {
@@ -1197,14 +1204,14 @@ document.addEventListener('click', async e=>{
       break;
     }
     case 'skill-move': {
-      const c = clone(S.config), i=+d.i, j=i+(+d.d);
-      if(j<0||j>=c.skills.length) return;
-      [c.skills[i],c.skills[j]]=[c.skills[j],c.skills[i]]; saveConfig(c); break;
+      const sid=d.id, dir=+d.d;
+      patchConfig(c=>{ const i=c.skills.findIndex(x=>x.id===sid), j=i+dir; if(i<0||j<0||j>=c.skills.length) return; [c.skills[i],c.skills[j]]=[c.skills[j],c.skills[i]]; });
+      break;
     }
-    case 'skill-toggle': { const c=clone(S.config); c.skills[+d.i].active=!c.skills[+d.i].active; saveConfig(c, c.skills[+d.i].active?'Skill shown':'Skill hidden'); break; }
-    case 'skill-add': { const v=$('#newSkill').value.trim(); if(!v) return; const c=clone(S.config); c.skills.push({id:uid(),name:v.toUpperCase(),active:true}); saveConfig(c,'Skill added'); break; }
-    case 'rater-add': { const v=$('#newRater').value.trim(); if(!v) return; const c=clone(S.config); if(c.raters.includes(v.toUpperCase())) return toast('Already on the list', true); c.raters.push(v.toUpperCase()); saveConfig(c,'Team member added'); break; }
-    case 'rater-del': { const c=clone(S.config); const n=c.raters[+d.i]; if(!confirmSafe(`Remove ${n} from the team list? Existing ratings they gave are kept in history.`)) return; c.raters.splice(+d.i,1); saveConfig(c,'Removed'); break; }
+    case 'skill-toggle': { const sk=S.config.skills.find(x=>x.id===d.id); if(!sk) return; const on=!sk.active; patchConfig(c=>{ const x=c.skills.find(y=>y.id===d.id); if(x) x.active=on; }, on?'Skill shown':'Skill hidden'); break; }
+    case 'skill-add': { const v=$('#newSkill').value.trim(); if(!v) return; const ns={id:uid(),name:v.toUpperCase(),active:true}; patchConfig(c=>{ if(!c.skills.some(x=>x.id===ns.id)) c.skills.push(clone(ns)); },'Skill added'); break; }
+    case 'rater-add': { const v=$('#newRater').value.trim(); if(!v) return; const nm=v.toUpperCase(); if(S.config.raters.includes(nm)) return toast('Already on the list', true); patchConfig(c=>{ if(!c.raters.includes(nm)) c.raters.push(nm); },'Team member added'); break; }
+    case 'rater-del': { const n=S.config.raters[+d.i]; if(!confirmSafe(`Remove ${n} from the team list? Existing ratings they gave are kept in history.`)) return; patchConfig(c=>{ c.raters=c.raters.filter(x=>x!==n); },'Removed'); break; }
     case 'copy-sql': copyText(SETUP_SQL); break;
     case 'reset-demo': if(!confirmSafe('Reset all demo data back to the samples?')) return; try{localStorage.removeItem(DEMO_KEY);}catch(_){} demoMem=null; await reload(); toast('Demo data reset'); break;
   }
@@ -1243,8 +1250,8 @@ document.addEventListener('change', e=>{
     toast('Saved');
     return;
   }
-  if(k==='skill-name'){ const c=clone(S.config); const v=el.value.trim(); if(!v) return render(); c.skills[+d.i].name=v.toUpperCase(); saveConfig(c,'Skill renamed'); }
-  if(k==='weight'){ const c=clone(S.config); c.weights[d.k]=Math.max(0,Math.min(100,+el.value||0)); saveConfig(c,'Weights saved'); }
+  if(k==='skill-name'){ const v=el.value.trim().toUpperCase(); if(!v) return render(); patchConfig(c=>{ const x=c.skills.find(y=>y.id===d.id); if(x) x.name=v; },'Skill renamed'); }
+  if(k==='weight'){ const v=Math.max(0,Math.min(100,+el.value||0)); patchConfig(c=>{ c.weights[d.k]=v; },'Weights saved'); }
 });
 document.addEventListener('input', e=>{
   if(e.target.id==='search'){ S.search=e.target.value; renderRows(); }
